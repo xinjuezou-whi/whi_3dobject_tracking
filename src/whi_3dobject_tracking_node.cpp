@@ -14,7 +14,7 @@ Changelog:
 2023-08-08: Initial version
 2022-xx-xx: xxx
 ******************************************************************/
-#include "whi_3DObjectTracking/whi_3DObjectTracking.h"
+#include "whi_3dobject_tracking/whi_3dobject_tracking.h"
 
 #include <ros/ros.h>
 
@@ -34,11 +34,11 @@ void signalHandler(int Signal)
 int main(int argc, char** argv)
 {
 	/// node version and copyright announcement
-	std::cout << "\nWHI 3DObjectTracking VERSION 00.01" << std::endl;
+	std::cout << "\nWHI 3DObjectTracking VERSION 00.02" << std::endl;
 	std::cout << "Copyright © 2023-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
 	/// ros infrastructure
-    const std::string nodeName("whi_3DObjectTracking"); 
+    const std::string nodeName("whi_3dobject_tracking"); 
 	ros::init(argc, argv, nodeName);
 	auto nodeHandle = std::make_shared<ros::NodeHandle>(nodeName);
 

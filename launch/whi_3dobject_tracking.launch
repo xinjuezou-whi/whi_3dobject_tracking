@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- argument -->
+
+  <!-- params -->
+  <rosparam file="$(find whi_3dobject_tracking)/config/config.yaml" command="load" subst_value="true"/>
+
+  <!-- hardware interface -->
+  <node name="whi_3dobject_tracking" pkg="whi_3dobject_tracking" type="whi_3dobject_tracking_node" output="screen"/>
+</launch>

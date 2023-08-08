@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(whi_3DObjectTracking)
+project(whi_3dobject_tracking)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++17)
@@ -16,6 +16,9 @@ find_package(catkin REQUIRED COMPONENTS
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
+find_package(OpenCV REQUIRED)
+find_package(GLEW REQUIRED)
+find_package(glfw3 REQUIRED)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -118,6 +121,8 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+  /usr/include/eigen3
+  /usr/local/include/opencv4
 )
 
 ## Declare a C++ library
@@ -126,18 +131,23 @@ FILE(GLOB WHI_SDK_SRC
 )
 add_library(${PROJECT_NAME} ${WHI_SDK_SRC})
 
-target_link_libraries(${PROJECT_NAME}
-   ${catkin_LIBRARIES}
-)
-
-# add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/ar2_arm_interface.cpp
-# )
-
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
 # add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(${PROJECT_NAME}
+   ${catkin_LIBRARIES}
+   m3t
+   realsense2
+   opencv_core
+   opencv_highgui
+   opencv_imgproc
+   opencv_imgcodecs
+   GLEW
+   glfw3
+   gomp
+)
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context

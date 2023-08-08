@@ -1,6 +1,9 @@
-whi_3DObjectTracking:
+whi_3dobject_tracking:
+  view_color: true
+  view_depth: true
   use_region_modality: true
   use_depth_modality: true
   use_texture_modality: false
   measure_occlusions: false
   model_occlusions: false
+  bodies: [ "io_485", "triangle" ]

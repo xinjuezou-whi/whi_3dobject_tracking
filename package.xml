@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>whi_3DObjectTracking</name>
+  <name>whi_3dobject_tracking</name>
   <version>0.0.1</version>
-  <description>The whi_3DObjectTracking package</description>
+  <description>The whi_3dobject_tracking package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->

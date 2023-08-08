@@ -21,6 +21,7 @@ Changelog:
 #include <ros/ros.h>
 
 #include <memory>
+#include <thread>
 
 namespace whi_3DObjectTracking
 {
@@ -28,12 +29,14 @@ namespace whi_3DObjectTracking
 	{
     public:
         TriDObjectTracking(std::shared_ptr<ros::NodeHandle>& NodeHandle);
-        ~TriDObjectTracking() = default;
+        ~TriDObjectTracking();
 
     protected:
         void init();
 
     protected:
         std::shared_ptr<ros::NodeHandle> node_handle_{ nullptr };
+        std::thread th_tracking_;
+        std::atomic<bool> terminated_{ false };
 	};
 } // namespace whi_3DObjectTracking
