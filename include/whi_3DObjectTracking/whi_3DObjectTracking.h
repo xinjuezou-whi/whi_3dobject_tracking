@@ -24,11 +24,11 @@ Changelog:
 
 namespace whi_3DObjectTracking
 {
-	class 3DObjectTracking
+	class TriDObjectTracking
 	{
     public:
-        3DObjectTracking(std::shared_ptr<ros::NodeHandle>& NodeHandle);
-        ~3DObjectTracking() = default;
+        TriDObjectTracking(std::shared_ptr<ros::NodeHandle>& NodeHandle);
+        ~TriDObjectTracking() = default;
 
     protected:
         void init();

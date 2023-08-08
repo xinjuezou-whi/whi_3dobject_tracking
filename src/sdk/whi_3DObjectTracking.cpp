@@ -18,13 +18,13 @@ All text above must be included in any redistribution.
 
 namespace whi_3DObjectTracking
 {
-    3DObjectTracking::3DObjectTracking(std::shared_ptr<ros::NodeHandle>& NodeHandle)
+    TriDObjectTracking::TriDObjectTracking(std::shared_ptr<ros::NodeHandle>& NodeHandle)
         : node_handle_(NodeHandle)
     {
         init();
     }
 
-    void 3DObjectTracking::init()
+    void TriDObjectTracking::init()
     {
         // params
     }

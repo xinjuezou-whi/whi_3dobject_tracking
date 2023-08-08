@@ -43,7 +43,7 @@ int main(int argc, char** argv)
 	auto nodeHandle = std::make_shared<ros::NodeHandle>(nodeName);
 
 	/// node logic
-	auto instance = std::make_unique<whi_3DObjectTracking::3DObjectTracking>(nodeHandle);
+	auto instance = std::make_unique<whi_3DObjectTracking::TriDObjectTracking>(nodeHandle);
 
 	// override the default ros sigint handler, with this override the shutdown will be gracefull
     // NOTE: this must be set after the NodeHandle is created
