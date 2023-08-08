@@ -52,6 +52,7 @@ namespace whi_3DObjectTracking
         // params
         bool viewColor = true;
         bool viewDepth = true;
+        bool visualizePoseResult = true;
         bool useRegionModality = true;
         bool useDepthModality = true;
         bool useTextureModality = false;
@@ -59,6 +60,7 @@ namespace whi_3DObjectTracking
         bool modelOcclusions = false;
         node_handle_->param("view_color", viewColor, true);
         node_handle_->param("view_depth", viewDepth, true);
+        node_handle_->param("visualize_pose_result", visualizePoseResult, true);
         node_handle_->param("use_region_modality", useRegionModality, true);
         node_handle_->param("use_depth_modality", useDepthModality, true);
         node_handle_->param("use_texture_modality", useTextureModality, false);
@@ -120,7 +122,7 @@ namespace whi_3DObjectTracking
                 body, colorCamera, colorSilhouetteRenderer)};
             auto depthModality{ std::make_shared<m3t::DepthModality>(bodyName + "_depth_modality",
                 body, depthCamera, depthModel)};
-            //if (kVisualizePoseResult)
+            if (visualizePoseResult)
             {
                 regionModality->set_visualize_pose_result(true);
             }
