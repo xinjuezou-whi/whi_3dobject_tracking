@@ -7,3 +7,4 @@ whi_3dobject_tracking:
   measure_occlusions: false
   model_occlusions: false
   bodies: [ "io_485", "triangle" ]
+  directory: data

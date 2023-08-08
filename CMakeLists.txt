@@ -144,6 +144,9 @@ target_link_libraries(${PROJECT_NAME}
    opencv_highgui
    opencv_imgproc
    opencv_imgcodecs
+   opencv_calib3d
+   opencv_xfeatures2d
+   opencv_cudafeatures2d
    GLEW
    glfw3
    gomp
