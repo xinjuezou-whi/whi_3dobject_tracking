@@ -1,6 +1,6 @@
 whi_3dobject_tracking:
   view_color: true
-  view_depth: true
+  view_depth: false
   visualize_pose_result: true
   use_region_modality: true
   use_depth_modality: true

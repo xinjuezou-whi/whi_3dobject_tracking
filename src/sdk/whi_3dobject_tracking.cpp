@@ -77,10 +77,13 @@ namespace whi_3DObjectTracking
         auto colorCamera{ std::make_shared<m3t::RealSenseColorCamera>("realsense_color") };
         auto depthCamera{ std::make_shared<m3t::RealSenseDepthCamera>("realsense_depth") };
         // setup viewers
-        auto colorViewer{ std::make_shared<m3t::NormalColorViewer>("color_viewer",
-            colorCamera, rendererGeometry) };
-        //if (kSaveImages) color_viewer_ptr->StartSavingImages(save_directory, "bmp");
-        tracker->AddViewer(colorViewer);
+        if (viewColor)
+        {
+            auto colorViewer{ std::make_shared<m3t::NormalColorViewer>("color_viewer",
+                colorCamera, rendererGeometry) };
+            //if (kSaveImages) color_viewer_ptr->StartSavingImages(save_directory, "bmp");
+            tracker->AddViewer(colorViewer);
+        }
         if (viewDepth)
         {
             auto depthViewer{ std::make_shared<m3t::NormalDepthViewer>("depth_viewer",
