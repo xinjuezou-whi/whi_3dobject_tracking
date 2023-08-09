@@ -15,10 +15,36 @@ find_package(catkin REQUIRED COMPONENTS
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
-
-find_package(OpenCV REQUIRED)
+find_package(Eigen3 3.3.2 REQUIRED)
 find_package(GLEW REQUIRED)
-find_package(glfw3 REQUIRED)
+if (UNIX)
+  set(OpenGL_GL_PREFERENCE LEGACY)
+endif ()
+find_package(OpenGL REQUIRED)
+find_package(glfw3 3.1.2 REQUIRED)
+find_package(OpenCV 4.3.0 REQUIRED)
+find_package(OpenMP)
+if (OPENMP_FOUND)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+endif ()
+
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag(-Ob3 HAS_OB3)
+check_cxx_compiler_flag(-O3 HAS_O3)
+check_cxx_compiler_flag(-Ob2 HAS_OB2)
+check_cxx_compiler_flag(-O2 HAS_O2)
+if (HAS_OB3)
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ob3")
+elseif (HAS_O3)
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+elseif (HAS_OB2)
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ob2")
+elseif (HAS_O2)
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
+endif ()
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG")
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -127,35 +153,39 @@ include_directories(
 
 ## Declare a C++ library
 FILE(GLOB WHI_SDK_SRC
- "src/sdk/*.cpp"
+  "src/sdk/*.cpp"
 )
-add_library(${PROJECT_NAME} ${WHI_SDK_SRC})
+FILE(GLOB M3T_SRC
+  "src/sdk/m3t/*.cpp"
+)
+# add_library(${PROJECT_NAME} ${WHI_SDK_SRC})
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
 # add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(${PROJECT_NAME}
-   ${catkin_LIBRARIES}
-   m3t
-   realsense2
-   opencv_core
-   opencv_highgui
-   opencv_imgproc
-   opencv_imgcodecs
-   opencv_calib3d
-   opencv_xfeatures2d
-   opencv_cudafeatures2d
-   GLEW
-   glfw3
-   gomp
-)
+# target_link_libraries(${PROJECT_NAME}
+#    ${catkin_LIBRARIES}
+#    m3t
+#    realsense2
+#    opencv_core
+#    opencv_highgui
+#    opencv_imgproc
+#    opencv_imgcodecs
+#    opencv_videoio
+#    opencv_calib3d
+#    opencv_xfeatures2d
+#    opencv_cudafeatures2d
+#    GLEW
+#    glfw3
+#    gomp
+# )
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${PROJECT_NAME}_node src/${PROJECT_NAME}_node.cpp)
+add_executable(${PROJECT_NAME}_node src/${PROJECT_NAME}_node.cpp ${WHI_SDK_SRC} ${M3T_SRC})
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -166,13 +196,29 @@ add_executable(${PROJECT_NAME}_node src/${PROJECT_NAME}_node.cpp)
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-add_dependencies(${PROJECT_NAME}_node ${PROJECT_NAME})
+# add_dependencies(${PROJECT_NAME}_node ${PROJECT_NAME})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}_node
-  ${PROJECT_NAME}
+  # ${PROJECT_NAME}
   ${catkin_LIBRARIES}
   boost_system
+  realsense2
+  opencv_core
+  opencv_highgui
+  opencv_imgproc
+  opencv_imgcodecs
+  opencv_videoio
+  opencv_calib3d
+  opencv_features2d
+  opencv_xfeatures2d
+  opencv_cudafeatures2d
+  GLEW
+  glfw3
+  gomp
+  dl
+  GL
+  X11
 )
 
 #############

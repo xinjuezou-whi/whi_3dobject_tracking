@@ -1,8 +1,8 @@
 /******************************************************************
-3D object tracking to get the 6DOF pose under ROS 1
+3D object tracking and its 6DOF pose estimation under ROS 1
 
 Features:
-- 6DOF pose
+- 3D target tracking and its 6DOF pose estimation
 - xxx
 
 Dependencies:

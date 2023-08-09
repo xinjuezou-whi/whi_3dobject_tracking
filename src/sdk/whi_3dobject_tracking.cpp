@@ -15,20 +15,20 @@ All text above must be included in any redistribution.
 
 ******************************************************************/
 #include "whi_3dobject_tracking/whi_3dobject_tracking.h"
-#include <m3t/tracker.h>
-#include <m3t/renderer_geometry.h>
-#include <m3t/realsense_camera.h>
-#include <m3t/renderer_geometry.h>
-#include <m3t/normal_viewer.h>
-#include <m3t/basic_depth_renderer.h>
-#include <m3t/body.h>
-#include <m3t/region_model.h>
-#include <m3t/depth_model.h>
-#include <m3t/region_modality.h>
-#include <m3t/texture_modality.h>
-#include <m3t/depth_modality.h>
-#include <m3t/link.h>
-#include <m3t/static_detector.h>
+#include <whi_3dobject_tracking/m3t/tracker.h>
+#include <whi_3dobject_tracking/m3t/renderer_geometry.h>
+#include <whi_3dobject_tracking/m3t/realsense_camera.h>
+#include <whi_3dobject_tracking/m3t/renderer_geometry.h>
+#include <whi_3dobject_tracking/m3t/normal_viewer.h>
+#include <whi_3dobject_tracking/m3t/basic_depth_renderer.h>
+#include <whi_3dobject_tracking/m3t/body.h>
+#include <whi_3dobject_tracking/m3t/region_model.h>
+#include <whi_3dobject_tracking/m3t/depth_model.h>
+#include <whi_3dobject_tracking/m3t/region_modality.h>
+#include <whi_3dobject_tracking/m3t/texture_modality.h>
+#include <whi_3dobject_tracking/m3t/depth_modality.h>
+#include <whi_3dobject_tracking/m3t/link.h>
+#include <whi_3dobject_tracking/m3t/static_detector.h>
 
 namespace whi_3DObjectTracking
 {
@@ -112,14 +112,14 @@ namespace whi_3DObjectTracking
             colorSilhouetteRenderer->AddReferencedBody(body);
             // setup models
             auto regionModel{ std::make_shared<m3t::RegionModel>(bodyName + "_region_model", body,
-                directory / (bodyName + "_region_model.bin"))};
+                directory / (bodyName + "_region_model.bin")) };
             auto depthModel{ std::make_shared<m3t::DepthModel>(bodyName + "_depth_model", body,
-                directory / (bodyName + "_depth_model.bin"))};
+                directory / (bodyName + "_depth_model.bin")) };
             // setup modalities
             auto regionModality{ std::make_shared<m3t::RegionModality>(bodyName + "_region_modality",
-                body, colorCamera, regionModel)};
+                body, colorCamera, regionModel) };
             auto textureModality{ std::make_shared<m3t::TextureModality>(bodyName + "_texture_modality",
-                body, colorCamera, colorSilhouetteRenderer)};
+                body, colorCamera, colorSilhouetteRenderer) };
             auto depthModality{ std::make_shared<m3t::DepthModality>(bodyName + "_depth_modality",
                 body, depthCamera, depthModel)};
             if (visualizePoseResult)
@@ -160,17 +160,16 @@ namespace whi_3DObjectTracking
             auto detector{std::make_shared<m3t::StaticDetector>(bodyName + "_detector", detectorPath, optimizer)};
             tracker->AddDetector(detector);
         }
-
-        th_tracking_ = std::thread
+        // start tracking
+        if (tracker->SetUp())
         {
-            [this]() -> void
+            th_tracking_ = std::thread
             {
-                while (!terminated_.load())
+                [tracker]() -> void
                 {
-                    std::cout << "TODO" << std::endl;
-                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                    tracker->RunTrackerProcess(true, false);
                 }
-            }
-        };
+            };
+        }
     }
 } // namespace whi_3DObjectTracking

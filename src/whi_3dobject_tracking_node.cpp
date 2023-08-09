@@ -34,7 +34,7 @@ void signalHandler(int Signal)
 int main(int argc, char** argv)
 {
 	/// node version and copyright announcement
-	std::cout << "\nWHI 3DObjectTracking VERSION 00.03" << std::endl;
+	std::cout << "\nWHI 3DObjectTracking VERSION 00.04" << std::endl;
 	std::cout << "Copyright © 2023-2024 Wheel Hub Intelligent Co.,Ltd. All rights reserved\n" << std::endl;
 
 	/// ros infrastructure
