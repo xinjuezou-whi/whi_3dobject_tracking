@@ -9,3 +9,6 @@ whi_3dobject_tracking:
   model_occlusions: false
   bodies: ["io_485"] #[ "io_485", "triangle" ]
   directory: /home/whi/catkin_workspace/src/whi_3dobject_tracking/data
+  color_topic: color_view
+  depth_topic: depth_view
+  pose_topic: tcp_pose

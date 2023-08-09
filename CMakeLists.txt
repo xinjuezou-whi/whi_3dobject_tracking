@@ -156,7 +156,7 @@ FILE(GLOB WHI_SDK_SRC
   "src/sdk/*.cpp"
 )
 FILE(GLOB M3T_SRC
-  "src/sdk/m3t/*.cpp"
+  "src/m3t/*.cpp"
 )
 # add_library(${PROJECT_NAME} ${WHI_SDK_SRC})
 

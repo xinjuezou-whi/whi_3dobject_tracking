@@ -116,7 +116,16 @@ Modality::Modality(const std::string &name,
                    const std::shared_ptr<Body> &body_ptr)
     : name_{name}, metafile_path_{metafile_path}, body_ptr_{body_ptr} {}
 
-void Modality::VisualizePose() {
+void Modality::VisualizePose()
+{
+  if (pose_result_func_)
+  {
+    Eigen::Isometry3f pose;
+    pose.translation() = body_ptr_->body2world_pose().translation();
+    pose.linear() = body_ptr_->body2world_pose().rotation();
+    pose_result_func_(name_, pose.cast<double>());
+  }
+
   std::cout << "----------------------------------------"
             << "----------------------------------------" << std::endl;
   std::cout << name_ << ": Body2World Pose = " << std::endl;
@@ -140,6 +149,11 @@ void Modality::VisualizeHessian() {
             << "----------------------------------------" << std::endl;
   std::cout << name_ << ": Hessian = " << std::endl;
   std::cout << hessian_ << std::endl;
+}
+
+void Modality::registerPoseResultCallback(PoseResultFunc Func)
+{
+  pose_result_func_ = Func;
 }
 
 }  // namespace m3t

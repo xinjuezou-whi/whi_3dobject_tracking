@@ -15,20 +15,24 @@ All text above must be included in any redistribution.
 
 ******************************************************************/
 #include "whi_3dobject_tracking/whi_3dobject_tracking.h"
-#include <whi_3dobject_tracking/m3t/tracker.h>
-#include <whi_3dobject_tracking/m3t/renderer_geometry.h>
-#include <whi_3dobject_tracking/m3t/realsense_camera.h>
-#include <whi_3dobject_tracking/m3t/renderer_geometry.h>
-#include <whi_3dobject_tracking/m3t/normal_viewer.h>
-#include <whi_3dobject_tracking/m3t/basic_depth_renderer.h>
-#include <whi_3dobject_tracking/m3t/body.h>
-#include <whi_3dobject_tracking/m3t/region_model.h>
-#include <whi_3dobject_tracking/m3t/depth_model.h>
-#include <whi_3dobject_tracking/m3t/region_modality.h>
-#include <whi_3dobject_tracking/m3t/texture_modality.h>
-#include <whi_3dobject_tracking/m3t/depth_modality.h>
-#include <whi_3dobject_tracking/m3t/link.h>
-#include <whi_3dobject_tracking/m3t/static_detector.h>
+#include "whi_interfaces/WhiTcpPose.h"
+
+#include <tf2_eigen/tf2_eigen.h>
+
+#include <m3t/tracker.h>
+#include <m3t/renderer_geometry.h>
+#include <m3t/realsense_camera.h>
+#include <m3t/renderer_geometry.h>
+#include <m3t/normal_viewer.h>
+#include <m3t/basic_depth_renderer.h>
+#include <m3t/body.h>
+#include <m3t/region_model.h>
+#include <m3t/depth_model.h>
+#include <m3t/region_modality.h>
+#include <m3t/texture_modality.h>
+#include <m3t/depth_modality.h>
+#include <m3t/link.h>
+#include <m3t/static_detector.h>
 
 namespace whi_3DObjectTracking
 {
@@ -40,7 +44,6 @@ namespace whi_3DObjectTracking
 
     TriDObjectTracking::~TriDObjectTracking()
     {
-        terminated_.store(true);
         if (th_tracking_.joinable())
         {
             th_tracking_.join();
@@ -68,6 +71,14 @@ namespace whi_3DObjectTracking
         node_handle_->param("model_occlusions", modelOcclusions, false);
         std::vector<std::string> bodyNames;
         node_handle_->getParam("bodies", bodyNames);
+        
+        // publisher
+        std::string poseTopic;
+        if (node_handle_->param("pose_topic", poseTopic, std::string()))
+        {
+            pub_pose_ = std::make_unique<ros::Publisher>(
+                node_handle_->advertise<whi_interfaces::WhiTcpPose>(poseTopic, 1));
+        }
 
         /// M3T
         // setup tracker and renderer geometry
@@ -121,6 +132,8 @@ namespace whi_3DObjectTracking
             // setup modalities
             auto regionModality{ std::make_shared<m3t::RegionModality>(bodyName + "_region_modality",
                 body, colorCamera, regionModel) };
+            regionModality->registerPoseResultCallback(std::bind(&TriDObjectTracking::poseCallback,
+                this, std::placeholders::_1, std::placeholders::_2));
             auto textureModality{ std::make_shared<m3t::TextureModality>(bodyName + "_texture_modality",
                 body, colorCamera, colorSilhouetteRenderer) };
             auto depthModality{ std::make_shared<m3t::DepthModality>(bodyName + "_depth_modality",
@@ -173,6 +186,18 @@ namespace whi_3DObjectTracking
                     tracker->RunTrackerProcess(true, false);
                 }
             };
+        }
+    }
+
+    void TriDObjectTracking::poseCallback(const std::string& Object, const Eigen::Isometry3d& Pose)
+    {
+        if (pub_pose_)
+        {
+            whi_interfaces::WhiTcpPose msg;
+            msg.tcp_pose.header.frame_id = Object;
+            msg.tcp_pose.header.stamp = ros::Time::now();
+            msg.tcp_pose.pose = Eigen::toMsg(Pose);
+            pub_pose_->publish(msg);
         }
     }
 } // namespace whi_3DObjectTracking

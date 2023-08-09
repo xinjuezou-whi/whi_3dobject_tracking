@@ -20,6 +20,8 @@ Changelog:
 #pragma once
 #include <ros/ros.h>
 
+#include <Eigen/Geometry>
+
 #include <memory>
 #include <thread>
 
@@ -33,10 +35,13 @@ namespace whi_3DObjectTracking
 
     protected:
         void init();
+        void poseCallback(const std::string& Object, const Eigen::Isometry3d& Pose);
 
     protected:
         std::shared_ptr<ros::NodeHandle> node_handle_{ nullptr };
         std::thread th_tracking_;
-        std::atomic<bool> terminated_{ false };
+        std::unique_ptr<ros::Publisher> pub_color_{ nullptr };
+        std::unique_ptr<ros::Publisher> pub_depth_{ nullptr };
+        std::unique_ptr<ros::Publisher> pub_pose_{ nullptr };
 	};
 } // namespace whi_3DObjectTracking

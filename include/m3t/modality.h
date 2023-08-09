@@ -19,6 +19,7 @@
 #include <opencv2/opencv.hpp>
 #include <string>
 #include <vector>
+#include <functional>
 
 namespace m3t {
 
@@ -53,7 +54,11 @@ namespace m3t {
  * @param save_image_type file format to which visualization images are saved.
  * @param save_visualization if true, visualization images are saved.
  */
-class Modality {
+class Modality
+{
+ public:
+  using PoseResultFunc = std::function<void(const std::string&, const Eigen::Isometry3d&)>;
+
  public:
   // Setup methods
   virtual bool SetUp() = 0;
@@ -118,6 +123,9 @@ class Modality {
   const std::filesystem::path &save_directory() const;
   const std::string &save_image_type() const;
 
+  // pose result register
+  void registerPoseResultCallback(PoseResultFunc Func);
+
  protected:
   // Constructor
   Modality(const std::string &name, const std::shared_ptr<Body> &body_ptr);
@@ -152,6 +160,9 @@ class Modality {
   bool imshow_optimization_ = false;
   bool imshow_result_ = false;
   bool set_up_ = false;
+
+  // pose result callback
+  PoseResultFunc pose_result_func_{ nullptr };
 };
 
 }  // namespace m3t
