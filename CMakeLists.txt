@@ -10,6 +10,8 @@ add_compile_options(-std=c++17)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
+  image_transport
+  # cv_bridge
   whi_interfaces
 )
 

@@ -19,8 +19,10 @@ Changelog:
 ******************************************************************/
 #pragma once
 #include <ros/ros.h>
+#include <image_transport/image_transport.h>
 
 #include <Eigen/Geometry>
+#include <opencv2/core/mat.hpp>
 
 #include <memory>
 #include <thread>
@@ -36,12 +38,15 @@ namespace whi_3DObjectTracking
     protected:
         void init();
         void poseCallback(const std::string& Object, const Eigen::Isometry3d& Pose);
+        void colorImageCallback(const std::string& Name, const cv::Mat& Image);
+        void depthImageCallback(const std::string& Name, const cv::Mat& Image);
 
     protected:
         std::shared_ptr<ros::NodeHandle> node_handle_{ nullptr };
         std::thread th_tracking_;
-        std::unique_ptr<ros::Publisher> pub_color_{ nullptr };
-        std::unique_ptr<ros::Publisher> pub_depth_{ nullptr };
         std::unique_ptr<ros::Publisher> pub_pose_{ nullptr };
+        std::unique_ptr<image_transport::Publisher> pub_color_{ nullptr };
+        std::unique_ptr<image_transport::Publisher> pub_depth_{ nullptr };
+        std::unique_ptr<image_transport::ImageTransport> image_transport_{ nullptr };
 	};
 } // namespace whi_3DObjectTracking

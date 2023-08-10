@@ -53,14 +53,28 @@ Viewer::Viewer(const std::string &name,
                const std::filesystem::path &metafile_path)
     : name_{name}, metafile_path_{metafile_path} {}
 
-void Viewer::DisplayAndSaveImage(int save_index, const cv::Mat &image) {
-  if (display_images_) cv::imshow(name_, image);
-  if (save_images_) {
+void Viewer::DisplayAndSaveImage(int save_index, const cv::Mat &image)
+{
+  if (view_image_func_)
+  {
+    view_image_func_(name_, image);
+  }
+  if (display_images_)
+  {
+    cv::imshow(name_, image);
+  }
+  if (save_images_)
+  {
     std::filesystem::path path{save_directory_ /
                                (name_ + "_image_" + std::to_string(save_index) +
                                 "." + save_image_type_)};
     cv::imwrite(path.string(), image);
   }
+}
+
+void Viewer::registerViewImageCallback(ViewImageFunc Func)
+{
+  view_image_func_ = Func;
 }
 
 void ColorViewer::set_color_camera_ptr(

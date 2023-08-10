@@ -18,6 +18,8 @@ All text above must be included in any redistribution.
 #include "whi_interfaces/WhiTcpPose.h"
 
 #include <tf2_eigen/tf2_eigen.h>
+#include <sensor_msgs/Image.h>
+#include <cv_bridge/cv_bridge.h>
 
 #include <m3t/tracker.h>
 #include <m3t/renderer_geometry.h>
@@ -74,10 +76,24 @@ namespace whi_3DObjectTracking
         
         // publisher
         std::string poseTopic;
-        if (node_handle_->param("pose_topic", poseTopic, std::string()))
+        node_handle_->param("pose_topic", poseTopic, std::string());
+        if (!poseTopic.empty())
         {
             pub_pose_ = std::make_unique<ros::Publisher>(
                 node_handle_->advertise<whi_interfaces::WhiTcpPose>(poseTopic, 1));
+        }
+        image_transport_ = std::make_unique<image_transport::ImageTransport>(*node_handle_);
+        std::string colorTopic;
+        node_handle_->param("color_topic", colorTopic, std::string());
+        if (!colorTopic.empty())
+        {
+            pub_color_ = std::make_unique<image_transport::Publisher>(image_transport_->advertise(colorTopic, 1));
+        }
+        std::string depthTopic;
+        node_handle_->param("depth_topic", depthTopic, std::string());
+        if (!depthTopic.empty())
+        {
+            pub_depth_ = std::make_unique<image_transport::Publisher>(image_transport_->advertise(depthTopic, 1));
         }
 
         /// M3T
@@ -92,6 +108,8 @@ namespace whi_3DObjectTracking
         {
             auto colorViewer{ std::make_shared<m3t::NormalColorViewer>("color_viewer",
                 colorCamera, rendererGeometry) };
+            colorViewer->registerViewImageCallback(std::bind(&TriDObjectTracking::colorImageCallback,
+                this, std::placeholders::_1, std::placeholders::_2));
             //if (kSaveImages) color_viewer_ptr->StartSavingImages(save_directory, "bmp");
             tracker->AddViewer(colorViewer);
         }
@@ -99,6 +117,8 @@ namespace whi_3DObjectTracking
         {
             auto depthViewer{ std::make_shared<m3t::NormalDepthViewer>("depth_viewer",
                 depthCamera, rendererGeometry, 0.3f, 1.0f)};
+            depthViewer->registerViewImageCallback(std::bind(&TriDObjectTracking::depthImageCallback,
+                this, std::placeholders::_1, std::placeholders::_2));
             //if (kSaveImages) depth_viewer_ptr->StartSavingImages(save_directory, "bmp");
             tracker->AddViewer(depthViewer);
         }
@@ -198,6 +218,28 @@ namespace whi_3DObjectTracking
             msg.tcp_pose.header.stamp = ros::Time::now();
             msg.tcp_pose.pose = Eigen::toMsg(Pose);
             pub_pose_->publish(msg);
+        }
+    }
+
+    void TriDObjectTracking::colorImageCallback(const std::string& Name, const cv::Mat& Image)
+    {
+        if (pub_color_)
+        {
+            sensor_msgs::Image img;
+            img.header.stamp = ros::Time::now();
+            img.header.frame_id = Name;
+            pub_color_->publish(img);
+        }
+    }
+
+    void TriDObjectTracking::depthImageCallback(const std::string& Name, const cv::Mat& Image)
+    {
+        if (pub_depth_)
+        {
+            sensor_msgs::Image img;
+            img.header.stamp = ros::Time::now();
+            img.header.frame_id = Name;
+            pub_depth_->publish(img);
         }
     }
 } // namespace whi_3DObjectTracking

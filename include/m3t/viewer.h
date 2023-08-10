@@ -11,6 +11,7 @@
 
 #include <memory>
 #include <string>
+#include <functional>
 
 namespace m3t {
 
@@ -27,7 +28,11 @@ namespace m3t {
  * @param save_image_type file format to which images are saved.
  * @param save_images if true, images are saved.
  */
-class Viewer {
+class Viewer
+{
+ public:
+  using ViewImageFunc = std::function<void(const std::string&, const cv::Mat&)>;
+
  public:
   // Setup method
   virtual bool SetUp() = 0;
@@ -54,6 +59,9 @@ class Viewer {
   bool save_images() const;
   bool set_up() const;
 
+  // view image register
+  void registerViewImageCallback(ViewImageFunc Func);
+
  protected:
   // Constructor
   Viewer(const std::string &name);
@@ -70,6 +78,9 @@ class Viewer {
   bool display_images_ = true;
   bool save_images_ = false;
   bool set_up_ = false;
+
+  // view image callback
+  ViewImageFunc view_image_func_{ nullptr };
 };
 
 /**
