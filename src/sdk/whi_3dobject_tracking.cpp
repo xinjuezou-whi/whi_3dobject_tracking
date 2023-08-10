@@ -203,9 +203,11 @@ namespace whi_3DObjectTracking
         {
             th_tracking_ = std::thread
             {
-                [tracker]() -> void
+                [this, tracker]() -> void
                 {
-                    tracker->RunTrackerProcess(true, false);
+                    bool trackingOnStart = false;
+                    this->node_handle_->param("tracking_on_start", trackingOnStart, false);
+                    tracker->RunTrackerProcess(true, trackingOnStart);
                 }
             };
         }

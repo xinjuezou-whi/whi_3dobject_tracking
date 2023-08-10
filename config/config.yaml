@@ -7,6 +7,7 @@ whi_3dobject_tracking:
   use_texture_modality: false
   measure_occlusions: false
   model_occlusions: false
+  tracking_on_start: false
   bodies: ["io_485"] #[ "io_485", "triangle" ]
   directory: /home/whi/catkin_workspace/src/whi_3dobject_tracking/data
   color_topic: color_view
