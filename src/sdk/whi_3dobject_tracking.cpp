@@ -36,6 +36,8 @@ All text above must be included in any redistribution.
 #include <m3t/link.h>
 #include <m3t/static_detector.h>
 
+#include "boost/endian/conversion.hpp"
+
 namespace whi_3DObjectTracking
 {
     TriDObjectTracking::TriDObjectTracking(std::shared_ptr<ros::NodeHandle>& NodeHandle)
@@ -225,10 +227,11 @@ namespace whi_3DObjectTracking
     {
         if (pub_color_)
         {
-            sensor_msgs::Image img;
-            img.header.stamp = ros::Time::now();
-            img.header.frame_id = Name;
-            pub_color_->publish(img);
+            sensor_msgs::Image imgMsg;
+            imgMsg.header.stamp = ros::Time::now();
+            imgMsg.header.frame_id = Name;
+            toImageMsg(Image, sensor_msgs::image_encodings::BGR8, imgMsg);
+            pub_color_->publish(imgMsg);
         }
     }
 
@@ -236,10 +239,40 @@ namespace whi_3DObjectTracking
     {
         if (pub_depth_)
         {
-            sensor_msgs::Image img;
-            img.header.stamp = ros::Time::now();
-            img.header.frame_id = Name;
-            pub_depth_->publish(img);
+            sensor_msgs::Image imgMsg;
+            imgMsg.header.stamp = ros::Time::now();
+            imgMsg.header.frame_id = Name;
+            toImageMsg(Image, sensor_msgs::image_encodings::BGR8, imgMsg);
+            pub_depth_->publish(imgMsg);
+        }
+    }
+
+    void TriDObjectTracking::toImageMsg(const cv::Mat& SrcImg, const std::string& SrcEncoding,
+        sensor_msgs::Image& RosImage)
+    {
+        RosImage.height = SrcImg.rows;
+        RosImage.width = SrcImg.cols;
+        RosImage.encoding = SrcEncoding;
+        RosImage.is_bigendian = (boost::endian::order::native == boost::endian::order::big);
+        RosImage.step = SrcImg.cols * SrcImg.elemSize();
+        size_t size = RosImage.step * SrcImg.rows;
+        RosImage.data.resize(size);
+
+        if (SrcImg.isContinuous())
+        {
+            memcpy((char*)(&RosImage.data[0]), SrcImg.data, size);
+        }
+        else
+        {
+            // Copy by row by row
+            uchar* rosDataPtr = (uchar*)(&RosImage.data[0]);
+            uchar* dataPtr = SrcImg.data;
+            for (int i = 0; i < SrcImg.rows; ++i)
+            {
+                memcpy(rosDataPtr, dataPtr, RosImage.step);
+                rosDataPtr += RosImage.step;
+                dataPtr += SrcImg.step;
+            }
         }
     }
 } // namespace whi_3DObjectTracking

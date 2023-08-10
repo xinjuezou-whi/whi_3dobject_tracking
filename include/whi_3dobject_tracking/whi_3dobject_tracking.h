@@ -42,6 +42,10 @@ namespace whi_3DObjectTracking
         void depthImageCallback(const std::string& Name, const cv::Mat& Image);
 
     protected:
+        static void toImageMsg(const cv::Mat& SrcImg, const std::string& SrcEncoding,
+            sensor_msgs::Image& RosImage);
+
+    protected:
         std::shared_ptr<ros::NodeHandle> node_handle_{ nullptr };
         std::thread th_tracking_;
         std::unique_ptr<ros::Publisher> pub_pose_{ nullptr };
