@@ -60,4 +60,5 @@ whi_3dobject_tracking:
   color_topic: color_view
   depth_topic: depth_view
   pose_topic: tcp_pose
+  pose_frame: chin_link_0
 ```
