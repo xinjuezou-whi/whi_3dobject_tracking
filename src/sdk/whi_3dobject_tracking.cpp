@@ -75,6 +75,9 @@ namespace whi_3DObjectTracking
         node_handle_->param("model_occlusions", modelOcclusions, false);
         std::vector<std::string> bodyNames;
         node_handle_->getParam("bodies", bodyNames);
+
+        // pose frame
+        node_handle_->param("pose_frame", pose_frame_, std::string("world"));
         
         // publisher
         std::string poseTopic;
@@ -218,7 +221,7 @@ namespace whi_3DObjectTracking
         if (pub_pose_)
         {
             whi_interfaces::WhiTcpPose msg;
-            msg.tcp_pose.header.frame_id = Object;
+            msg.tcp_pose.header.frame_id = pose_frame_;
             msg.tcp_pose.header.stamp = ros::Time::now();
             msg.tcp_pose.pose = Eigen::toMsg(Pose);
             pub_pose_->publish(msg);

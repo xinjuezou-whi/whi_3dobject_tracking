@@ -52,5 +52,6 @@ namespace whi_3DObjectTracking
         std::unique_ptr<image_transport::Publisher> pub_color_{ nullptr };
         std::unique_ptr<image_transport::Publisher> pub_depth_{ nullptr };
         std::unique_ptr<image_transport::ImageTransport> image_transport_{ nullptr };
+        std::string pose_frame_{ "world" };
 	};
 } // namespace whi_3DObjectTracking
