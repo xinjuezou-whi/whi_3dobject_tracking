@@ -20,6 +20,7 @@ Changelog:
 #pragma once
 #include <ros/ros.h>
 #include <image_transport/image_transport.h>
+#include <geometry_msgs/TransformStamped.h>
 
 #include <Eigen/Geometry>
 #include <opencv2/core/mat.hpp>
@@ -53,5 +54,6 @@ namespace whi_3DObjectTracking
         std::unique_ptr<image_transport::Publisher> pub_depth_{ nullptr };
         std::unique_ptr<image_transport::ImageTransport> image_transport_{ nullptr };
         std::string pose_frame_{ "world" };
+        std::shared_ptr<geometry_msgs::TransformStamped> transform_to_tcp_{ nullptr };
 	};
 } // namespace whi_3DObjectTracking

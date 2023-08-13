@@ -18,8 +18,11 @@ All text above must be included in any redistribution.
 #include "whi_interfaces/WhiTcpPose.h"
 
 #include <tf2_eigen/tf2_eigen.h>
+#include <tf2/LinearMath/Transform.h>
+#include <tf2/transform_datatypes.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <sensor_msgs/Image.h>
-#include <cv_bridge/cv_bridge.h>
+#include <sensor_msgs/image_encodings.h>
 
 #include <m3t/tracker.h>
 #include <m3t/renderer_geometry.h>
@@ -36,7 +39,7 @@ All text above must be included in any redistribution.
 #include <m3t/link.h>
 #include <m3t/static_detector.h>
 
-#include "boost/endian/conversion.hpp"
+#include <boost/endian/conversion.hpp>
 
 namespace whi_3DObjectTracking
 {
@@ -78,6 +81,26 @@ namespace whi_3DObjectTracking
 
         // pose frame
         node_handle_->param("pose_frame", pose_frame_, std::string("world"));
+        std::vector<double> trans;
+        if (node_handle_->getParam("transform_to_tcp", trans))
+        {
+            tf2::Quaternion q;
+            if (trans.size() == 6)
+            {
+                q.setRPY(trans[3], trans[4], trans[5]);
+            }
+            else
+            {
+                q.setRPY(0.0, 0.0, 0.0);
+            }
+            
+            if (trans.size() >= 3)
+            {
+                tf2::Stamped<tf2::Transform> stamped;
+                stamped.setData(tf2::Transform(q, tf2::Vector3(trans[0], trans[1], trans[2])));
+                transform_to_tcp_ = std::make_shared<geometry_msgs::TransformStamped>(tf2::toMsg(stamped));
+            }
+        }
         
         // publisher
         std::string poseTopic;
@@ -223,7 +246,26 @@ namespace whi_3DObjectTracking
             whi_interfaces::WhiTcpPose msg;
             msg.tcp_pose.header.frame_id = pose_frame_;
             msg.tcp_pose.header.stamp = ros::Time::now();
-            msg.tcp_pose.pose = Eigen::toMsg(Pose);
+
+            // convert left-hand to right-hand frame
+            Eigen::Isometry3d rightPose(Pose);
+            rightPose.matrix()(0, 1) = Pose.matrix()(0, 2);
+            rightPose.matrix()(0, 2) = Pose.matrix()(0, 1);
+            rightPose.matrix()(1, 0) = Pose.matrix()(2, 0);
+            rightPose.matrix()(1, 1) = Pose.matrix()(2, 2);
+            rightPose.matrix()(1, 2) = Pose.matrix()(2, 1);
+            rightPose.matrix()(2, 0) = Pose.matrix()(1, 0);
+            rightPose.matrix()(2, 1) = Pose.matrix()(1, 2);
+            rightPose.matrix()(2, 2) = Pose.matrix()(1, 1);
+            rightPose.matrix()(1, 3) = Pose.matrix()(2, 3);
+            rightPose.matrix()(2, 3) = Pose.matrix()(1, 3);
+
+            Eigen::Isometry3d transformed(rightPose);
+            if (transform_to_tcp_)
+            {
+                tf2::doTransform(rightPose, transformed, *transform_to_tcp_);
+            }
+            msg.tcp_pose.pose = Eigen::toMsg(transformed);
             pub_pose_->publish(msg);
         }
     }
