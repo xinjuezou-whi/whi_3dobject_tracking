@@ -259,6 +259,23 @@ namespace whi_3DObjectTracking
             rightPose.matrix()(2, 2) = Pose.matrix()(1, 1);
             rightPose.matrix()(1, 3) = Pose.matrix()(2, 3);
             rightPose.matrix()(2, 3) = Pose.matrix()(1, 3);
+            rightPose.matrix()(3, 0) = 0.0;
+            rightPose.matrix()(3, 1) = 0.0;
+            rightPose.matrix()(3, 2) = 0.0;
+            rightPose.matrix()(3, 3) = 1.0;
+#ifdef DEBUG
+            std::cout << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" << std::endl;
+            std::cout << "rightPose = " << std::endl;
+            for (int i = 0; i < 4; ++i)
+            {
+                for (int j = 0; j < 4; ++j)
+                {
+                    std::cout << rightPose.matrix()(i, j) << ", ";
+                }
+                std::cout << std::endl;
+            }
+#endif
 
             Eigen::Isometry3d transformed(rightPose);
             if (transform_to_tcp_)
