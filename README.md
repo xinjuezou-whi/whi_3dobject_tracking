@@ -59,6 +59,8 @@ whi_3dobject_tracking:
   directory: /home/whi/catkin_workspace/src/whi_3dobject_tracking/data
   color_topic: color_view
   depth_topic: depth_view
-  pose_topic: tcp_pose
-  pose_frame: chin_link_0
+  pose_topic: /tcp_pose
+  pose_frame: camera
+  transform_to_tcp: [0, 0, 0, 0, 3.1415926, 1.5708]
+  transformed_reference: [-0.18, 0, 0]
 ```
