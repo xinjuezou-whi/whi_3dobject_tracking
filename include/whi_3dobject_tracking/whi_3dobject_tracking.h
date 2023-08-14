@@ -55,5 +55,6 @@ namespace whi_3DObjectTracking
         std::unique_ptr<image_transport::ImageTransport> image_transport_{ nullptr };
         std::string pose_frame_{ "world" };
         std::shared_ptr<geometry_msgs::TransformStamped> transform_to_tcp_{ nullptr };
+        std::array<double, 3> transformed_reference_;
 	};
 } // namespace whi_3DObjectTracking

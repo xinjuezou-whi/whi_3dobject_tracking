@@ -15,3 +15,4 @@ whi_3dobject_tracking:
   pose_topic: /tcp_pose
   pose_frame: camera
   transform_to_tcp: [0, 0, 0, 0, 3.1415926, 1.5708]
+  transformed_reference: [-0.18, 0, 0]

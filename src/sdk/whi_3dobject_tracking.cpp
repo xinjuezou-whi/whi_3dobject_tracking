@@ -41,6 +41,12 @@ All text above must be included in any redistribution.
 
 #include <boost/endian/conversion.hpp>
 
+template <typename T>
+static int signOf(T Val)
+{
+    return T(0) == Val ? 1 : (T(0) < Val) - (Val < T(0));
+}
+
 namespace whi_3DObjectTracking
 {
     TriDObjectTracking::TriDObjectTracking(std::shared_ptr<ros::NodeHandle>& NodeHandle)
@@ -100,6 +106,12 @@ namespace whi_3DObjectTracking
                 stamped.setData(tf2::Transform(q, tf2::Vector3(trans[0], trans[1], trans[2])));
                 transform_to_tcp_ = std::make_shared<geometry_msgs::TransformStamped>(tf2::toMsg(stamped));
             }
+        }
+        std::vector<double> transformedRef;
+        node_handle_->getParam("transformed_reference", transformedRef);
+        for (size_t i = 0; i < transformedRef.size(); ++i)
+        {
+            transformed_reference_[i] = transformedRef[i];
         }
         
         // publisher
@@ -281,6 +293,11 @@ namespace whi_3DObjectTracking
             if (transform_to_tcp_)
             {
                 tf2::doTransform(rightPose, transformed, *transform_to_tcp_);
+                for (size_t i = 0; i < 3; ++i)
+                {
+                    transformed.matrix()(i, 3) =
+                        signOf(transformed_reference_[i]) * (transformed.matrix()(i, 3) - transformed_reference_[i]);
+                }
             }
             msg.tcp_pose.pose = Eigen::toMsg(transformed);
             pub_pose_->publish(msg);
