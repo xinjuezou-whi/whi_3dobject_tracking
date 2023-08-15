@@ -38,6 +38,7 @@ namespace whi_3DObjectTracking
 
     protected:
         void init();
+        void initM3t();
         void poseCallback(const std::string& Object, const Eigen::Isometry3d& Pose);
         void colorImageCallback(const std::string& Name, const cv::Mat& Image);
         void depthImageCallback(const std::string& Name, const cv::Mat& Image);
@@ -50,11 +51,13 @@ namespace whi_3DObjectTracking
         std::shared_ptr<ros::NodeHandle> node_handle_{ nullptr };
         std::thread th_tracking_;
         std::unique_ptr<ros::Publisher> pub_pose_{ nullptr };
+        std::unique_ptr<ros::ServiceClient> client_pose_{ nullptr };
         std::unique_ptr<image_transport::Publisher> pub_color_{ nullptr };
         std::unique_ptr<image_transport::Publisher> pub_depth_{ nullptr };
         std::unique_ptr<image_transport::ImageTransport> image_transport_{ nullptr };
         std::string pose_frame_{ "world" };
         std::shared_ptr<geometry_msgs::TransformStamped> transform_to_tcp_{ nullptr };
         std::array<double, 3> transformed_reference_;
+        std::thread th_client_;
 	};
 } // namespace whi_3DObjectTracking

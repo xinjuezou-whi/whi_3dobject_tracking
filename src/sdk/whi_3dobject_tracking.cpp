@@ -16,11 +16,13 @@ All text above must be included in any redistribution.
 ******************************************************************/
 #include "whi_3dobject_tracking/whi_3dobject_tracking.h"
 #include "whi_interfaces/WhiTcpPose.h"
+#include "whi_interfaces/WhiSrvTcpPose.h"
 
 #include <tf2_eigen/tf2_eigen.h>
 #include <tf2/LinearMath/Transform.h>
 #include <tf2/transform_datatypes.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <angles/angles.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/image_encodings.h>
 
@@ -65,26 +67,7 @@ namespace whi_3DObjectTracking
 
     void TriDObjectTracking::init()
     {
-        // params
-        bool viewColor = true;
-        bool viewDepth = true;
-        bool visualizePoseResult = true;
-        bool useRegionModality = true;
-        bool useDepthModality = true;
-        bool useTextureModality = false;
-        bool measureOcclusions = false;
-        bool modelOcclusions = false;
-        node_handle_->param("view_color", viewColor, true);
-        node_handle_->param("view_depth", viewDepth, true);
-        node_handle_->param("visualize_pose_result", visualizePoseResult, true);
-        node_handle_->param("use_region_modality", useRegionModality, true);
-        node_handle_->param("use_depth_modality", useDepthModality, true);
-        node_handle_->param("use_texture_modality", useTextureModality, false);
-        node_handle_->param("measure_occlusions", measureOcclusions, false);
-        node_handle_->param("model_occlusions", modelOcclusions, false);
-        std::vector<std::string> bodyNames;
-        node_handle_->getParam("bodies", bodyNames);
-
+        /// init infrastructure
         // pose frame
         node_handle_->param("pose_frame", pose_frame_, std::string("world"));
         std::vector<double> trans;
@@ -135,8 +118,40 @@ namespace whi_3DObjectTracking
         {
             pub_depth_ = std::make_unique<image_transport::Publisher>(image_transport_->advertise(depthTopic, 1));
         }
+        // service client
+        std::string poseService;
+        node_handle_->param("pose_service", poseService, std::string());
+        if (!poseService.empty())
+        {
+            client_pose_ = std::make_unique<ros::ServiceClient>(
+                node_handle_->serviceClient<whi_interfaces::WhiSrvTcpPose>(poseService));
+        }
 
-        /// M3T
+        /// init M3T
+        initM3t();
+    }
+
+    void TriDObjectTracking::initM3t()
+    {
+        bool viewColor = true;
+        bool viewDepth = true;
+        bool visualizePoseResult = true;
+        bool useRegionModality = true;
+        bool useDepthModality = true;
+        bool useTextureModality = false;
+        bool measureOcclusions = false;
+        bool modelOcclusions = false;
+        node_handle_->param("view_color", viewColor, true);
+        node_handle_->param("view_depth", viewDepth, true);
+        node_handle_->param("visualize_pose_result", visualizePoseResult, true);
+        node_handle_->param("use_region_modality", useRegionModality, true);
+        node_handle_->param("use_depth_modality", useDepthModality, true);
+        node_handle_->param("use_texture_modality", useTextureModality, false);
+        node_handle_->param("measure_occlusions", measureOcclusions, false);
+        node_handle_->param("model_occlusions", modelOcclusions, false);
+        std::vector<std::string> bodyNames;
+        node_handle_->getParam("bodies", bodyNames);
+
         // setup tracker and renderer geometry
         auto tracker{ std::make_shared<m3t::Tracker>("tracker") };
         auto rendererGeometry{ std::make_shared<m3t::RendererGeometry>("renderer geometry") };
@@ -253,54 +268,96 @@ namespace whi_3DObjectTracking
 
     void TriDObjectTracking::poseCallback(const std::string& Object, const Eigen::Isometry3d& Pose)
     {
+        // convert left-hand to right-hand frame
+        Eigen::Isometry3d rightPose(Pose);
+        rightPose.matrix()(0, 1) = Pose.matrix()(0, 2);
+        rightPose.matrix()(0, 2) = Pose.matrix()(0, 1);
+        rightPose.matrix()(1, 0) = Pose.matrix()(2, 0);
+        rightPose.matrix()(1, 1) = Pose.matrix()(2, 2);
+        rightPose.matrix()(1, 2) = Pose.matrix()(2, 1);
+        rightPose.matrix()(2, 0) = Pose.matrix()(1, 0);
+        rightPose.matrix()(2, 1) = Pose.matrix()(1, 2);
+        rightPose.matrix()(2, 2) = Pose.matrix()(1, 1);
+        rightPose.matrix()(1, 3) = Pose.matrix()(2, 3);
+        rightPose.matrix()(2, 3) = Pose.matrix()(1, 3);
+        rightPose.matrix()(3, 0) = 0.0;
+        rightPose.matrix()(3, 1) = 0.0;
+        rightPose.matrix()(3, 2) = 0.0;
+        rightPose.matrix()(3, 3) = 1.0;
+#ifdef DEBUG
+        std::cout << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" << std::endl;
+        std::cout << "rightPose = " << std::endl;
+        for (int i = 0; i < 4; ++i)
+        {
+            for (int j = 0; j < 4; ++j)
+            {
+                std::cout << rightPose.matrix()(i, j) << ", ";
+            }
+            std::cout << std::endl;
+        }
+#endif
+
+        // transform to tcp frame if there is 
+        Eigen::Isometry3d transformed(rightPose);
+        if (transform_to_tcp_)
+        {
+            tf2::doTransform(rightPose, transformed, *transform_to_tcp_);
+            for (size_t i = 0; i < 3; ++i)
+            {
+                transformed.matrix()(i, 3) =
+                    signOf(transformed_reference_[i]) * (transformed.matrix()(i, 3) - transformed_reference_[i]);
+            }
+        }
+
         if (pub_pose_)
         {
             whi_interfaces::WhiTcpPose msg;
             msg.tcp_pose.header.frame_id = pose_frame_;
             msg.tcp_pose.header.stamp = ros::Time::now();
-
-            // convert left-hand to right-hand frame
-            Eigen::Isometry3d rightPose(Pose);
-            rightPose.matrix()(0, 1) = Pose.matrix()(0, 2);
-            rightPose.matrix()(0, 2) = Pose.matrix()(0, 1);
-            rightPose.matrix()(1, 0) = Pose.matrix()(2, 0);
-            rightPose.matrix()(1, 1) = Pose.matrix()(2, 2);
-            rightPose.matrix()(1, 2) = Pose.matrix()(2, 1);
-            rightPose.matrix()(2, 0) = Pose.matrix()(1, 0);
-            rightPose.matrix()(2, 1) = Pose.matrix()(1, 2);
-            rightPose.matrix()(2, 2) = Pose.matrix()(1, 1);
-            rightPose.matrix()(1, 3) = Pose.matrix()(2, 3);
-            rightPose.matrix()(2, 3) = Pose.matrix()(1, 3);
-            rightPose.matrix()(3, 0) = 0.0;
-            rightPose.matrix()(3, 1) = 0.0;
-            rightPose.matrix()(3, 2) = 0.0;
-            rightPose.matrix()(3, 3) = 1.0;
-#ifdef DEBUG
-            std::cout << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" << std::endl;
-            std::cout << "rightPose = " << std::endl;
-            for (int i = 0; i < 4; ++i)
-            {
-                for (int j = 0; j < 4; ++j)
-                {
-                    std::cout << rightPose.matrix()(i, j) << ", ";
-                }
-                std::cout << std::endl;
-            }
-#endif
-
-            Eigen::Isometry3d transformed(rightPose);
-            if (transform_to_tcp_)
-            {
-                tf2::doTransform(rightPose, transformed, *transform_to_tcp_);
-                for (size_t i = 0; i < 3; ++i)
-                {
-                    transformed.matrix()(i, 3) =
-                        signOf(transformed_reference_[i]) * (transformed.matrix()(i, 3) - transformed_reference_[i]);
-                }
-            }
             msg.tcp_pose.pose = Eigen::toMsg(transformed);
+#ifndef BEBUG
+#ifdef TRANS
+            tf2::Quaternion q(msg.tcp_pose.pose.orientation.x, msg.tcp_pose.pose.orientation.y,
+                msg.tcp_pose.pose.orientation.z, msg.tcp_pose.pose.orientation.w);
+            double roll = 0.0, pitch = 0.0, yaw = 0.0;
+  		    tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+            std::cout << "beforeeeeeeeeeeeeeeee roll:" << angles::to_degrees(roll) << ",pitch:" <<
+                angles::to_degrees(pitch) << ",yaw:" << angles::to_degrees(yaw) << std::endl;
+		    // q.setRPY(0.25 * m3t::kPi - roll, 0.25 * m3t::kPi - pitch, yaw);
+            q.setRPY(roll, 0.0, 0.0);
+            msg.tcp_pose.pose.orientation = tf2::toMsg(q);
+            tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+            std::cout << "afterrrrrrrrrrrrrrrrr roll:" << angles::to_degrees(roll) << ",pitch:" <<
+                angles::to_degrees(pitch) << ",yaw:" << angles::to_degrees(yaw) << std::endl;
+#else
+            msg.tcp_pose.pose.orientation.x = 0.0;
+            msg.tcp_pose.pose.orientation.y = 0.0;
+            msg.tcp_pose.pose.orientation.z = 0.0;
+            msg.tcp_pose.pose.orientation.w = 1.0;
+#endif
+#endif
             pub_pose_->publish(msg);
+        }
+        if (client_pose_ && !th_client_.joinable())
+        {
+            th_client_ = std::thread
+            {
+                [this, transformed]() -> void
+                {
+                    whi_interfaces::WhiSrvTcpPose srv;
+                    srv.request.tcp_pose.header.frame_id = this->pose_frame_;
+                    srv.request.tcp_pose.header.stamp = ros::Time::now();
+                    srv.request.tcp_pose.pose = Eigen::toMsg(transformed);
+#ifndef DEBUG
+                    srv.request.tcp_pose.pose.orientation.x = 0.0;
+                    srv.request.tcp_pose.pose.orientation.y = 0.0;
+                    srv.request.tcp_pose.pose.orientation.z = 0.0;
+                    srv.request.tcp_pose.pose.orientation.w = 1.0;
+#endif
+                    this->client_pose_->call(srv);
+                }
+            };
         }
     }
 
@@ -345,7 +402,7 @@ namespace whi_3DObjectTracking
         }
         else
         {
-            // Copy by row by row
+            // copy by row by row
             uchar* rosDataPtr = (uchar*)(&RosImage.data[0]);
             uchar* dataPtr = SrcImg.data;
             for (int i = 0; i < SrcImg.rows; ++i)
