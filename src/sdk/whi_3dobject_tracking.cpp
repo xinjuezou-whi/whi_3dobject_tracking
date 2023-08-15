@@ -339,12 +339,14 @@ namespace whi_3DObjectTracking
 #endif
             pub_pose_->publish(msg);
         }
-        if (client_pose_ && !th_client_.joinable())
+        if (client_pose_ && service_standby_.load())
         {
-            th_client_ = std::thread
+            std::thread
             {
                 [this, transformed]() -> void
                 {
+                    this->service_standby_.store(false);
+
                     if (this->client_pose_->waitForExistence(ros::Duration(3.0)))
 				    {
                         whi_interfaces::WhiSrvTcpPose srv;
@@ -363,8 +365,10 @@ namespace whi_3DObjectTracking
                     {
                         ROS_WARN_STREAM("failed to get the tcp_pose service, please check if it is launched");
                     }
+
+                    this->service_standby_.store(true);
                 }
-            };
+            }.detach();
         }
     }
 

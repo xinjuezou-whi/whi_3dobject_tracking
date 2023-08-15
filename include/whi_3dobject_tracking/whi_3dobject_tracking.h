@@ -58,6 +58,6 @@ namespace whi_3DObjectTracking
         std::string pose_frame_{ "world" };
         std::shared_ptr<geometry_msgs::TransformStamped> transform_to_tcp_{ nullptr };
         std::array<double, 3> transformed_reference_;
-        std::thread th_client_;
+        std::atomic_bool service_standby_{ true };
 	};
 } // namespace whi_3DObjectTracking
