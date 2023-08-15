@@ -345,17 +345,24 @@ namespace whi_3DObjectTracking
             {
                 [this, transformed]() -> void
                 {
-                    whi_interfaces::WhiSrvTcpPose srv;
-                    srv.request.tcp_pose.header.frame_id = this->pose_frame_;
-                    srv.request.tcp_pose.header.stamp = ros::Time::now();
-                    srv.request.tcp_pose.pose = Eigen::toMsg(transformed);
+                    if (this->client_pose_->waitForExistence(ros::Duration(3.0)))
+				    {
+                        whi_interfaces::WhiSrvTcpPose srv;
+                        srv.request.tcp_pose.header.frame_id = this->pose_frame_;
+                        srv.request.tcp_pose.header.stamp = ros::Time::now();
+                        srv.request.tcp_pose.pose = Eigen::toMsg(transformed);
 #ifndef DEBUG
-                    srv.request.tcp_pose.pose.orientation.x = 0.0;
-                    srv.request.tcp_pose.pose.orientation.y = 0.0;
-                    srv.request.tcp_pose.pose.orientation.z = 0.0;
-                    srv.request.tcp_pose.pose.orientation.w = 1.0;
+                        srv.request.tcp_pose.pose.orientation.x = 0.0;
+                        srv.request.tcp_pose.pose.orientation.y = 0.0;
+                        srv.request.tcp_pose.pose.orientation.z = 0.0;
+                        srv.request.tcp_pose.pose.orientation.w = 1.0;
 #endif
-                    this->client_pose_->call(srv);
+                        this->client_pose_->call(srv);
+				    }
+                    else
+                    {
+                        ROS_WARN_STREAM("failed to get the tcp_pose service, please check if it is launched");
+                    }
                 }
             };
         }
