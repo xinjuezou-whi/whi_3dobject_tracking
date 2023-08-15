@@ -485,7 +485,7 @@ bool TextureModality::VisualizeResults(int save_idx) {
       VisualizePointsSilhouetteRendering("silhouette_rendering_result",
                                          save_idx);
   }
-  if (visualize_pose_result_) VisualizePose();
+  VisualizePose();
   return true;
 }
 

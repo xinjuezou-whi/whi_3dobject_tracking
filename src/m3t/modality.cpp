@@ -126,14 +126,19 @@ void Modality::VisualizePose()
     pose_result_func_(name_, pose.cast<double>());
   }
 
-  std::cout << "----------------------------------------"
-            << "----------------------------------------" << std::endl;
-  std::cout << name_ << ": Body2World Pose = " << std::endl;
-  for (int i = 0; i < 4; ++i) {
-    for (int j = 0; j < 4; ++j) {
-      std::cout << body_ptr_->body2world_pose().matrix()(i, j) << ", ";
+  if (visualize_pose_result_)
+  {
+    std::cout << "----------------------------------------"
+      << "----------------------------------------" << std::endl;
+    std::cout << name_ << ": Body2World Pose = " << std::endl;
+    for (int i = 0; i < 4; ++i)
+    {
+      for (int j = 0; j < 4; ++j)
+      {
+        std::cout << body_ptr_->body2world_pose().matrix()(i, j) << ", ";
+      }
+      std::cout << std::endl;
     }
-    std::cout << std::endl;
   }
 }
 
