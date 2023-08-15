@@ -3,6 +3,8 @@
 
 ![tracking_ros](https://github.com/xinjuezou-whi/whi_3dobject_tracking/assets/72239958/3309453c-e553-490c-a9af-d7e68ba1c717)
 
+![servo](https://github.com/xinjuezou-whi/whi_3dobject_tracking/assets/72239958/86b5d793-af85-4a2c-a209-00a0f170bb50)
+
 ## Citation
 
 If you find our work useful, please cite us with: 
