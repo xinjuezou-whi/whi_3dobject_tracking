@@ -354,10 +354,20 @@ namespace whi_3DObjectTracking
                         srv.request.tcp_pose.header.stamp = ros::Time::now();
                         srv.request.tcp_pose.pose = Eigen::toMsg(transformed);
 #ifndef DEBUG
+#ifdef TRANS
+                        tf2::Quaternion q(srv.request.tcp_pose.pose.orientation.x,
+                            srv.request.tcp_pose.pose.orientation.y,
+                            srv.request.tcp_pose.pose.orientation.z, srv.request.tcp_pose.pose.orientation.w);
+                        double roll = 0.0, pitch = 0.0, yaw = 0.0;
+  		                tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+                        q.setRPY(0.0, 0.0, yaw / 15.0);
+                        srv.request.tcp_pose.pose.orientation = tf2::toMsg(q);
+#else
                         srv.request.tcp_pose.pose.orientation.x = 0.0;
                         srv.request.tcp_pose.pose.orientation.y = 0.0;
                         srv.request.tcp_pose.pose.orientation.z = 0.0;
                         srv.request.tcp_pose.pose.orientation.w = 1.0;
+#endif
 #endif
                         this->client_pose_->call(srv);
 				    }
