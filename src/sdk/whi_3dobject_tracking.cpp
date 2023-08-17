@@ -186,7 +186,7 @@ namespace whi_3DObjectTracking
         auto colorSilhouetteRenderer{ std::make_shared<m3t::FocusedSilhouetteRenderer>("color_silhouette_renderer",
             rendererGeometry, colorCamera) };
         // setup bodies
-        for (const auto bodyName : bodyNames)
+        for (const auto& bodyName : bodyNames)
         {
             std::string dirPath;
             node_handle_->param("directory", dirPath, std::string());
@@ -205,7 +205,7 @@ namespace whi_3DObjectTracking
             auto depthModel{ std::make_shared<m3t::DepthModel>(bodyName + "_depth_model", body,
                 directory / (bodyName + "_depth_model.bin")) };
             // setup modalities
-            auto regionModality{ std::make_shared<m3t::RegionModality>(bodyName + "_region_modality",
+            auto regionModality{ std::make_shared<m3t::RegionModality>(bodyName,
                 body, colorCamera, regionModel) };
             regionModality->registerPoseResultCallback(std::bind(&TriDObjectTracking::poseCallback,
                 this, std::placeholders::_1, std::placeholders::_2));
@@ -248,12 +248,21 @@ namespace whi_3DObjectTracking
             tracker->AddOptimizer(optimizer);
             // setup detector
             std::filesystem::path detectorPath{ directory / (bodyName + "_static_detector.yaml") };
-            auto detector{std::make_shared<m3t::StaticDetector>(bodyName + "_detector", detectorPath, optimizer)};
+            auto detector{std::make_shared<m3t::StaticDetector>(bodyName, detectorPath, optimizer)};
             tracker->AddDetector(detector);
         }
         // start tracking
         if (tracker->SetUp())
         {
+            // acquire the link2world poses
+            for (const auto& it : tracker->detector_ptrs())
+            {
+                Eigen::Isometry3f pose;
+                pose.translation() = ((m3t::StaticDetector*)it.get())->link2world_pose().translation();
+                pose.linear() = ((m3t::StaticDetector*)it.get())->link2world_pose().rotation();
+                link_2_world_pose_map_[it->name()] = pose.cast<double>();
+            }
+
             th_tracking_ = std::thread
             {
                 [this, tracker]() -> void
@@ -269,21 +278,8 @@ namespace whi_3DObjectTracking
     void TriDObjectTracking::poseCallback(const std::string& Object, const Eigen::Isometry3d& Pose)
     {
         // convert left-hand to right-hand frame
-        Eigen::Isometry3d rightPose(Pose);
-        rightPose.matrix()(0, 1) = Pose.matrix()(0, 2);
-        rightPose.matrix()(0, 2) = Pose.matrix()(0, 1);
-        rightPose.matrix()(1, 0) = Pose.matrix()(2, 0);
-        rightPose.matrix()(1, 1) = Pose.matrix()(2, 2);
-        rightPose.matrix()(1, 2) = Pose.matrix()(2, 1);
-        rightPose.matrix()(2, 0) = Pose.matrix()(1, 0);
-        rightPose.matrix()(2, 1) = Pose.matrix()(1, 2);
-        rightPose.matrix()(2, 2) = Pose.matrix()(1, 1);
-        rightPose.matrix()(1, 3) = Pose.matrix()(2, 3);
-        rightPose.matrix()(2, 3) = Pose.matrix()(1, 3);
-        rightPose.matrix()(3, 0) = 0.0;
-        rightPose.matrix()(3, 1) = 0.0;
-        rightPose.matrix()(3, 2) = 0.0;
-        rightPose.matrix()(3, 3) = 1.0;
+        Eigen::Isometry3d rightPose;
+        toggleRightAndLeftHand(Pose, rightPose);
 #ifdef DEBUG
         std::cout << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
             << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" << std::endl;
@@ -317,7 +313,7 @@ namespace whi_3DObjectTracking
             msg.tcp_pose.header.stamp = ros::Time::now();
             msg.tcp_pose.pose = Eigen::toMsg(transformed);
 #ifndef BEBUG
-#ifdef TRANS
+#ifndef TRANS
             Eigen::Vector3d unitX(1.0, 0.0, 0.0);
             Eigen::Vector3d norm = transformed.rotation() * unitX;
             Eigen::Vector3d rZ = unitX.cross(norm) / unitX.cross(norm).norm();
@@ -446,5 +442,24 @@ namespace whi_3DObjectTracking
                 dataPtr += SrcImg.step;
             }
         }
+    }
+
+    void TriDObjectTracking::toggleRightAndLeftHand(const Eigen::Isometry3d& Src, Eigen::Isometry3d& Dst)
+    {
+        Dst = Src;
+        Dst.matrix()(0, 1) = Src.matrix()(0, 2);
+        Dst.matrix()(0, 2) = Src.matrix()(0, 1);
+        Dst.matrix()(1, 0) = Src.matrix()(2, 0);
+        Dst.matrix()(1, 1) = Src.matrix()(2, 2);
+        Dst.matrix()(1, 2) = Src.matrix()(2, 1);
+        Dst.matrix()(2, 0) = Src.matrix()(1, 0);
+        Dst.matrix()(2, 1) = Src.matrix()(1, 2);
+        Dst.matrix()(2, 2) = Src.matrix()(1, 1);
+        Dst.matrix()(1, 3) = Src.matrix()(2, 3);
+        Dst.matrix()(2, 3) = Src.matrix()(1, 3);
+        Dst.matrix()(3, 0) = 0.0;
+        Dst.matrix()(3, 1) = 0.0;
+        Dst.matrix()(3, 2) = 0.0;
+        Dst.matrix()(3, 3) = 1.0;
     }
 } // namespace whi_3DObjectTracking

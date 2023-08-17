@@ -46,6 +46,7 @@ namespace whi_3DObjectTracking
     protected:
         static void toImageMsg(const cv::Mat& SrcImg, const std::string& SrcEncoding,
             sensor_msgs::Image& RosImage);
+        static void toggleRightAndLeftHand(const Eigen::Isometry3d& Src, Eigen::Isometry3d& Dst);
 
     protected:
         std::shared_ptr<ros::NodeHandle> node_handle_{ nullptr };
@@ -59,5 +60,6 @@ namespace whi_3DObjectTracking
         std::shared_ptr<geometry_msgs::TransformStamped> transform_to_tcp_{ nullptr };
         std::array<double, 3> transformed_reference_;
         std::atomic_bool service_standby_{ true };
+        std::map<std::string, Eigen::Isometry3d> link_2_world_pose_map_;
 	};
 } // namespace whi_3DObjectTracking
