@@ -149,6 +149,7 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+  include/third_party
   /usr/include/eigen3
   /usr/local/include/opencv4
 )
@@ -221,6 +222,7 @@ target_link_libraries(${PROJECT_NAME}_node
   dl
   GL
   X11
+  stdc++fs
 )
 
 #############
