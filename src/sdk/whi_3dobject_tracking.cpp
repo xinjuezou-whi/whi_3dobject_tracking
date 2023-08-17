@@ -318,18 +318,31 @@ namespace whi_3DObjectTracking
             msg.tcp_pose.pose = Eigen::toMsg(transformed);
 #ifndef BEBUG
 #ifdef TRANS
+            Eigen::Vector3d unitX(1.0, 0.0, 0.0);
+            Eigen::Vector3d norm = transformed.rotation() * unitX;
+            Eigen::Vector3d rZ = unitX.cross(norm) / unitX.cross(norm).norm();
+            Eigen::Vector3d rY = rZ.cross(norm) / rZ.cross(norm).norm();
+            Eigen::Matrix3d rotation;
+            rotation << norm, rY, rZ;
+            Eigen::Quaterniond eigenQ(rotation);
+            geometry_msgs::Quaternion msgQ = tf2::toMsg(eigenQ);
+            tf2::Quaternion tfQ(msgQ.x, msgQ.y, msgQ.z, msgQ.w);
+            double roll = 0.0, pitch = 0.0, yaw = 0.0;
+  		    tf2::Matrix3x3(tfQ).getRPY(roll, pitch, yaw);
+            std::cout << "aligned roll:" << angles::to_degrees(roll) << ",pitch:" <<
+                angles::to_degrees(pitch) << ",yaw:" << angles::to_degrees(yaw) << std::endl;
+
             tf2::Quaternion q(msg.tcp_pose.pose.orientation.x, msg.tcp_pose.pose.orientation.y,
                 msg.tcp_pose.pose.orientation.z, msg.tcp_pose.pose.orientation.w);
-            double roll = 0.0, pitch = 0.0, yaw = 0.0;
   		    tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
-            std::cout << "beforeeeeeeeeeeeeeeee roll:" << angles::to_degrees(roll) << ",pitch:" <<
+            std::cout << "m3t roll:" << angles::to_degrees(roll) << ",pitch:" <<
                 angles::to_degrees(pitch) << ",yaw:" << angles::to_degrees(yaw) << std::endl;
-		    // q.setRPY(0.25 * m3t::kPi - roll, 0.25 * m3t::kPi - pitch, yaw);
-            q.setRPY(roll, 0.0, 0.0);
-            msg.tcp_pose.pose.orientation = tf2::toMsg(q);
-            tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
-            std::cout << "afterrrrrrrrrrrrrrrrr roll:" << angles::to_degrees(roll) << ",pitch:" <<
-                angles::to_degrees(pitch) << ",yaw:" << angles::to_degrees(yaw) << std::endl;
+		    // // q.setRPY(0.25 * m3t::kPi - roll, 0.25 * m3t::kPi - pitch, yaw);
+            // q.setRPY(roll, 0.0, 0.0);
+            // msg.tcp_pose.pose.orientation = tf2::toMsg(q);
+            // tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+            // std::cout << "afterrrrrrrrrrrrrrrrr roll:" << angles::to_degrees(roll) << ",pitch:" <<
+            //     angles::to_degrees(pitch) << ",yaw:" << angles::to_degrees(yaw) << std::endl;
 #else
             msg.tcp_pose.pose.orientation.x = 0.0;
             msg.tcp_pose.pose.orientation.y = 0.0;
