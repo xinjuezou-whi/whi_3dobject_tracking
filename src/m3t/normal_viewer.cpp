@@ -200,11 +200,15 @@ void NormalColorViewer::visualizeFrame(cv::Mat& DstImage)
     float lengthRatio = 0.1;
     for (const auto& body : renderer_geometry_ptr_->render_data_bodies())
     {
+        // rotation
+        Transform3fA pose(body.body_ptr->geometry2world_pose());
+        auto rotated = pose.rotate(Eigen::AngleAxis<float>(-0.5 * kPi, Eigen::Vector3f(1.0, 0.0, 0.0)));
+
         std::vector<cv::Point2f> points2dPoses;
-        points2dPoses.push_back(backproject3DPoint(body.body_ptr->geometry2world_pose(), cv::Point3f(0, 0, 0))); // axis center
-        points2dPoses.push_back(backproject3DPoint(body.body_ptr->geometry2world_pose(), cv::Point3f(lengthRatio, 0, 0))); // axis x
-        points2dPoses.push_back(backproject3DPoint(body.body_ptr->geometry2world_pose(), cv::Point3f(0, lengthRatio, 0))); // axis y
-        points2dPoses.push_back(backproject3DPoint(body.body_ptr->geometry2world_pose(), cv::Point3f(0, 0, lengthRatio))); // axis z
+        points2dPoses.push_back(backproject3DPoint(rotated, cv::Point3f(0, 0, 0))); // axis center
+        points2dPoses.push_back(backproject3DPoint(rotated, cv::Point3f(lengthRatio, 0, 0))); // axis x
+        points2dPoses.push_back(backproject3DPoint(rotated, cv::Point3f(0, lengthRatio, 0))); // axis y
+        points2dPoses.push_back(backproject3DPoint(rotated, cv::Point3f(0, 0, lengthRatio))); // axis z
         draw3DCoordinateAxes(DstImage, points2dPoses);
     }
 }
