@@ -277,32 +277,33 @@ namespace whi_3DObjectTracking
 
     void TriDObjectTracking::poseCallback(const std::string& Object, const Eigen::Isometry3d& Pose)
     {
-        // convert left-hand to right-hand frame
-        Eigen::Isometry3d rightPose;
-        toggleRightAndLeftHand(Pose, rightPose);
-#ifdef DEBUG
-        std::cout << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-            << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" << std::endl;
-        std::cout << "rightPose = " << std::endl;
-        for (int i = 0; i < 4; ++i)
+        // get the link2world pose
+        double linkRoll = 0.0, linkPitch = 0.0, linkYaw = 0.0;
+        if (auto search = link_2_world_pose_map_.find(Object); search != link_2_world_pose_map_.end())
         {
-            for (int j = 0; j < 4; ++j)
+            Eigen::Isometry3d transformedLink;
+            if (transform_to_tcp_)
             {
-                std::cout << rightPose.matrix()(i, j) << ", ";
-            }
-            std::cout << std::endl;
-        }
+                tf2::doTransform(search->second, transformedLink, *transform_to_tcp_);
+                auto link = Eigen::toMsg(transformedLink);
+                tf2::Quaternion q(link.orientation.x, link.orientation.y,
+                    link.orientation.z, link.orientation.w);
+  		        tf2::Matrix3x3(q).getRPY(linkRoll, linkPitch, linkYaw);
+#ifdef DEBUG
+                std::cout << "link roll:" << angles::to_degrees(linkRoll) << ",pitch:" <<
+                    angles::to_degrees(linkPitch) << ",yaw:" << angles::to_degrees(linkYaw) << std::endl;
 #endif
+            }
+        }
 
         // transform to tcp frame if there is 
-        Eigen::Isometry3d transformed(rightPose);
+        Eigen::Isometry3d transformed;
         if (transform_to_tcp_)
         {
-            tf2::doTransform(rightPose, transformed, *transform_to_tcp_);
+            tf2::doTransform(Pose, transformed, *transform_to_tcp_);
             for (size_t i = 0; i < 3; ++i)
             {
-                transformed.matrix()(i, 3) =
-                    signOf(transformed_reference_[i]) * (transformed.matrix()(i, 3) - transformed_reference_[i]);
+                transformed.matrix()(i, 3) = transformed.matrix()(i, 3) - transformed_reference_[i];
             }
         }
 
@@ -312,39 +313,13 @@ namespace whi_3DObjectTracking
             msg.tcp_pose.header.frame_id = pose_frame_;
             msg.tcp_pose.header.stamp = ros::Time::now();
             msg.tcp_pose.pose = Eigen::toMsg(transformed);
-#ifndef BEBUG
 #ifndef TRANS
-            Eigen::Vector3d unitX(1.0, 0.0, 0.0);
-            Eigen::Vector3d norm = transformed.rotation() * unitX;
-            Eigen::Vector3d rZ = unitX.cross(norm) / unitX.cross(norm).norm();
-            Eigen::Vector3d rY = rZ.cross(norm) / rZ.cross(norm).norm();
-            Eigen::Matrix3d rotation;
-            rotation << norm, rY, rZ;
-            Eigen::Quaterniond eigenQ(rotation);
-            geometry_msgs::Quaternion msgQ = tf2::toMsg(eigenQ);
-            tf2::Quaternion tfQ(msgQ.x, msgQ.y, msgQ.z, msgQ.w);
-            double roll = 0.0, pitch = 0.0, yaw = 0.0;
-  		    tf2::Matrix3x3(tfQ).getRPY(roll, pitch, yaw);
-            std::cout << "aligned roll:" << angles::to_degrees(roll) << ",pitch:" <<
-                angles::to_degrees(pitch) << ",yaw:" << angles::to_degrees(yaw) << std::endl;
-
-            tf2::Quaternion q(msg.tcp_pose.pose.orientation.x, msg.tcp_pose.pose.orientation.y,
-                msg.tcp_pose.pose.orientation.z, msg.tcp_pose.pose.orientation.w);
-  		    tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
-            std::cout << "m3t roll:" << angles::to_degrees(roll) << ",pitch:" <<
-                angles::to_degrees(pitch) << ",yaw:" << angles::to_degrees(yaw) << std::endl;
-		    // // q.setRPY(0.25 * m3t::kPi - roll, 0.25 * m3t::kPi - pitch, yaw);
-            // q.setRPY(roll, 0.0, 0.0);
-            // msg.tcp_pose.pose.orientation = tf2::toMsg(q);
-            // tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
-            // std::cout << "afterrrrrrrrrrrrrrrrr roll:" << angles::to_degrees(roll) << ",pitch:" <<
-            //     angles::to_degrees(pitch) << ",yaw:" << angles::to_degrees(yaw) << std::endl;
+            deltaEuler(msg.tcp_pose.pose.orientation, linkRoll, linkPitch, linkYaw);
 #else
             msg.tcp_pose.pose.orientation.x = 0.0;
             msg.tcp_pose.pose.orientation.y = 0.0;
             msg.tcp_pose.pose.orientation.z = 0.0;
             msg.tcp_pose.pose.orientation.w = 1.0;
-#endif
 #endif
             pub_pose_->publish(msg);
         }
@@ -352,7 +327,7 @@ namespace whi_3DObjectTracking
         {
             std::thread
             {
-                [this, transformed]() -> void
+                [this, transformed, linkRoll, linkPitch, linkYaw]() -> void
                 {
                     this->service_standby_.store(false);
 
@@ -362,21 +337,13 @@ namespace whi_3DObjectTracking
                         srv.request.tcp_pose.header.frame_id = this->pose_frame_;
                         srv.request.tcp_pose.header.stamp = ros::Time::now();
                         srv.request.tcp_pose.pose = Eigen::toMsg(transformed);
-#ifndef DEBUG
-#ifdef TRANS
-                        tf2::Quaternion q(srv.request.tcp_pose.pose.orientation.x,
-                            srv.request.tcp_pose.pose.orientation.y,
-                            srv.request.tcp_pose.pose.orientation.z, srv.request.tcp_pose.pose.orientation.w);
-                        double roll = 0.0, pitch = 0.0, yaw = 0.0;
-  		                tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
-                        q.setRPY(0.0, 0.0, yaw / 15.0);
-                        srv.request.tcp_pose.pose.orientation = tf2::toMsg(q);
+#ifndef TRANS
+                        deltaEuler(srv.request.tcp_pose.pose.orientation, linkRoll, linkPitch, linkYaw);
 #else
                         srv.request.tcp_pose.pose.orientation.x = 0.0;
                         srv.request.tcp_pose.pose.orientation.y = 0.0;
                         srv.request.tcp_pose.pose.orientation.z = 0.0;
                         srv.request.tcp_pose.pose.orientation.w = 1.0;
-#endif
 #endif
                         this->client_pose_->call(srv);
 				    }
@@ -461,5 +428,24 @@ namespace whi_3DObjectTracking
         Dst.matrix()(3, 1) = 0.0;
         Dst.matrix()(3, 2) = 0.0;
         Dst.matrix()(3, 3) = 1.0;
+    }
+
+    void TriDObjectTracking::deltaEuler(geometry_msgs::Quaternion& Src,
+        double RollDelta, double PitchDelta, double YawDelta)
+    {
+        tf2::Quaternion q(Src.x, Src.y, Src.z, Src.w);
+        double roll = 0.0, pitch = 0.0, yaw = 0.0;
+  		tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+#ifdef DEBUG
+        std::cout << "original roll:" << angles::to_degrees(roll) << ",pitch:" <<
+            angles::to_degrees(pitch) << ",yaw:" << angles::to_degrees(yaw) << std::endl;
+#endif
+        q.setRPY(roll - RollDelta, pitch - PitchDelta, yaw - YawDelta);
+        Src = tf2::toMsg(q);
+#ifndef DEBUG
+        tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+        std::cout << "after roll:" << angles::to_degrees(roll) << ",pitch:" <<
+            angles::to_degrees(pitch) << ",yaw:" << angles::to_degrees(yaw) << std::endl;
+#endif
     }
 } // namespace whi_3DObjectTracking

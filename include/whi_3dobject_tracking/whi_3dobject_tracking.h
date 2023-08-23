@@ -47,6 +47,7 @@ namespace whi_3DObjectTracking
         static void toImageMsg(const cv::Mat& SrcImg, const std::string& SrcEncoding,
             sensor_msgs::Image& RosImage);
         static void toggleRightAndLeftHand(const Eigen::Isometry3d& Src, Eigen::Isometry3d& Dst);
+        static void deltaEuler(geometry_msgs::Quaternion& Src, double RollDelta, double PitchDelta, double YawDelta);
 
     protected:
         std::shared_ptr<ros::NodeHandle> node_handle_{ nullptr };
