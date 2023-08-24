@@ -305,8 +305,8 @@ namespace whi_3DObjectTracking
   		        tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
                 std::cout << "link roll:" << angles::to_degrees(roll) << ",pitch:" <<
                     angles::to_degrees(pitch) << ",yaw:" << angles::to_degrees(yaw) << std::endl;
-#endif
             }
+#endif
         }
 
         if (pub_pose_)
