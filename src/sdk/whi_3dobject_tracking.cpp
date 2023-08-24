@@ -278,7 +278,7 @@ namespace whi_3DObjectTracking
     void TriDObjectTracking::poseCallback(const std::string& Object, const Eigen::Isometry3d& Pose)
     {
         // transform to tcp frame if there is 
-        Eigen::Isometry3d transformed;
+        Eigen::Isometry3d transformed(Pose);
         if (transform_to_tcp_)
         {
             tf2::doTransform(Pose, transformed, *transform_to_tcp_);
