@@ -321,19 +321,9 @@ namespace whi_3DObjectTracking
             msg.tcp_pose.header.frame_id = pose_frame_;
             msg.tcp_pose.header.stamp = ros::Time::now();
             msg.tcp_pose.pose = Eigen::toMsg(transformed);
-#ifndef DEBUG
-            tf2::Quaternion q(msg.tcp_pose.pose.orientation.x, msg.tcp_pose.pose.orientation.y,
-                msg.tcp_pose.pose.orientation.z, msg.tcp_pose.pose.orientation.w);
-            double roll = 0.0, pitch = 0.0, yaw = 0.0;
-  		    tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
-            std::cout << "roll:" << angles::to_degrees(roll) << ",pitch:" <<
-                angles::to_degrees(pitch) << ",yaw:" << angles::to_degrees(yaw) << std::endl;
-            q.setRPY(roll * euler_multipliers_[0], pitch * euler_multipliers_[1], yaw * euler_multipliers_[2]);
-            tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
-            std::cout << "after roll:" << angles::to_degrees(roll) << ",pitch:" <<
-                angles::to_degrees(pitch) << ",yaw:" << angles::to_degrees(yaw) << std::endl;
-             msg.tcp_pose.pose.orientation = tf2::toMsg(q);
-#endif
+
+            scalingEuler(msg.tcp_pose.pose.orientation, euler_multipliers_);
+
             pub_pose_->publish(msg);
         }
         if (client_pose_ && service_standby_.load())
@@ -350,6 +340,8 @@ namespace whi_3DObjectTracking
                         srv.request.tcp_pose.header.frame_id = this->pose_frame_;
                         srv.request.tcp_pose.header.stamp = ros::Time::now();
                         srv.request.tcp_pose.pose = Eigen::toMsg(transformed);
+
+                        scalingEuler(srv.request.tcp_pose.pose.orientation, euler_multipliers_);
 #ifdef DEBUG
                         srv.request.tcp_pose.pose.orientation.x = 0.0;
                         srv.request.tcp_pose.pose.orientation.y = 0.0;
@@ -439,5 +431,23 @@ namespace whi_3DObjectTracking
         Dst.matrix()(3, 1) = 0.0;
         Dst.matrix()(3, 2) = 0.0;
         Dst.matrix()(3, 3) = 1.0;
+    }
+
+    void TriDObjectTracking::scalingEuler(geometry_msgs::Quaternion& Src, const std::array<double, 3>& Multiplier)
+    {
+        tf2::Quaternion q(Src.x, Src.y, Src.z, Src.w);
+        double roll = 0.0, pitch = 0.0, yaw = 0.0;
+  		tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+#ifdef DEBUG
+        std::cout << "original roll:" << angles::to_degrees(roll) << ",pitch:" <<
+            angles::to_degrees(pitch) << ",yaw:" << angles::to_degrees(yaw) << std::endl;
+#endif
+        q.setRPY(roll * Multiplier[0], pitch * Multiplier[1], yaw * Multiplier[2]);
+        Src = tf2::toMsg(q);
+#ifdef DEBUG
+        tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+        std::cout << "after roll:" << angles::to_degrees(roll) << ",pitch:" <<
+            angles::to_degrees(pitch) << ",yaw:" << angles::to_degrees(yaw) << std::endl;
+#endif
     }
 } // namespace whi_3DObjectTracking
