@@ -61,5 +61,6 @@ namespace whi_3DObjectTracking
         std::array<double, 3> transformed_reference_;
         std::atomic_bool service_standby_{ true };
         std::map<std::string, Eigen::Isometry3d> link_2_world_pose_map_;
+        std::array<double, 3> euler_multipliers_;
 	};
 } // namespace whi_3DObjectTracking

@@ -96,6 +96,12 @@ namespace whi_3DObjectTracking
         {
             transformed_reference_[i] = transformedRef[i];
         }
+        std::vector<double> multipliers;
+        node_handle_->getParam("euler_muliplier", multipliers);
+        for (size_t i = 0; i < multipliers.size(); ++i)
+        {
+            euler_multipliers_[i] = multipliers[i];
+        }
         
         // publisher
         std::string poseTopic;
@@ -322,6 +328,11 @@ namespace whi_3DObjectTracking
   		    tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
             std::cout << "roll:" << angles::to_degrees(roll) << ",pitch:" <<
                 angles::to_degrees(pitch) << ",yaw:" << angles::to_degrees(yaw) << std::endl;
+            q.setRPY(roll * euler_multipliers_[0], pitch * euler_multipliers_[1], yaw * euler_multipliers_[2]);
+            tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+            std::cout << "after roll:" << angles::to_degrees(roll) << ",pitch:" <<
+                angles::to_degrees(pitch) << ",yaw:" << angles::to_degrees(yaw) << std::endl;
+             msg.tcp_pose.pose.orientation = tf2::toMsg(q);
 #endif
             pub_pose_->publish(msg);
         }
@@ -339,6 +350,12 @@ namespace whi_3DObjectTracking
                         srv.request.tcp_pose.header.frame_id = this->pose_frame_;
                         srv.request.tcp_pose.header.stamp = ros::Time::now();
                         srv.request.tcp_pose.pose = Eigen::toMsg(transformed);
+#ifdef DEBUG
+                        srv.request.tcp_pose.pose.orientation.x = 0.0;
+                        srv.request.tcp_pose.pose.orientation.y = 0.0;
+                        srv.request.tcp_pose.pose.orientation.z = 0.0;
+                        srv.request.tcp_pose.pose.orientation.w = 1.0;
+#endif
                         this->client_pose_->call(srv);
 				    }
                     else
