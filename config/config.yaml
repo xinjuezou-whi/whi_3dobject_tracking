@@ -13,8 +13,10 @@ whi_3dobject_tracking:
   color_topic: color_view
   depth_topic: depth_view
   pose_topic: /tcp_pose
-  pose_service: /tcp_pose
+  # pose_service: /tcp_pose
   pose_frame: camera
-  transform_to_tcp: [0, 0, 0, -1.5708, 0, -1.5708]
-  transformed_reference: [0.18, 0, 0]
+  # chin: [0, 0, 0, -1.5708, 0, -1.5708] and [0.18, 0, 0]
+  # ur: [0, 0, 0, 1.5708, 0, 0] and [0, -0.18, 0]
+  transform_to_tcp: [0, 0, 0, 1.5708, 0, 0]
+  transformed_reference: [0, -0.18, 0]
   euler_muliplier: [0.2, 0.2, 0.2]
