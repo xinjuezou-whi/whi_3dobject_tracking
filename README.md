@@ -49,8 +49,8 @@ source <your workspace>/devel/setup.bash
 ```
 whi_3dobject_tracking:
   view_color: true
-  view_depth: true
-  visualize_pose_result: true
+  view_depth: false
+  visualize_pose_result: false
   use_region_modality: true
   use_depth_modality: true
   use_texture_modality: false
@@ -62,7 +62,11 @@ whi_3dobject_tracking:
   color_topic: color_view
   depth_topic: depth_view
   pose_topic: tcp_pose
+  pose_service: tcp_pose
   pose_frame: camera
-  transform_to_tcp: [0, 0, 0, 0, 3.1415926, 1.5708]
-  transformed_reference: [-0.18, 0, 0]
+  # chin: [0, 0, 0, -1.5708, 0, -1.5708] and [0.18, 0, 0]
+  # ur: [0, 0, 0, 1.5708, 0, 0] and [0, -0.18, 0]
+  transform_to_tcp: [0, 0, 0, 1.5708, 0, 0]
+  transformed_reference: [0, -0.18, 0]
+  euler_muliplier: [0.2, 0.2, 0.2]
 ```
