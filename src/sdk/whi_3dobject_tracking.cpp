@@ -283,7 +283,7 @@ namespace whi_3DObjectTracking
 
     void TriDObjectTracking::poseCallback(const std::string& Object, const Eigen::Isometry3d& Pose)
     {
-        // transform to tcp frame if there is 
+        // transform to tcp frame if there is
         Eigen::Isometry3d transformed(Pose);
         if (transform_to_tcp_)
         {
@@ -293,26 +293,65 @@ namespace whi_3DObjectTracking
                 transformed.matrix()(i, 3) = transformed.matrix()(i, 3) - transformed_reference_[i];
             }
         }
-        // get the link2world pose
+        auto transformedMsg = Eigen::toMsg(transformed);
+        tf2::Quaternion q(transformedMsg.orientation.x, transformedMsg.orientation.y,
+            transformedMsg.orientation.z, transformedMsg.orientation.w);
+        double transformedRoll = 0.0, transformedPitch = 0.0, transformedYaw = 0.0;
+  		tf2::Matrix3x3(q).getRPY(transformedRoll, transformedPitch, transformedYaw);
+#ifdef DEBUG
+        std::cout << "trans to tcp roll:" << angles::to_degrees(transformedRoll) << ",pitch:" <<
+            angles::to_degrees(transformedPitch) << ",yaw:" << angles::to_degrees(transformedYaw) << std::endl;
+#endif
+
+        geometry_msgs::Pose tcpMsg = Eigen::toMsg(transformed);
+
+        // align the orientation to link in world frame
+        Eigen::Isometry3d aligned(Pose);
         std::map<std::string, Eigen::Isometry3d>::iterator foundLink;
         if (foundLink = link_2_world_pose_map_.find(Object); foundLink != link_2_world_pose_map_.end())
         {
-            // rotate to link's orientation
-            transformed.linear() = transformed.linear() * foundLink->second.linear();
 #ifdef DEBUG
-            Eigen::Isometry3d transformedLink;
+            // the Eigen::eulerAngles method consistently chooses to minimize first angles
+            // refer to https://stackoverflow.com/questions/33895970/about-eulerangles-conversion-from-eigen-c-library
+            // and https://answers.ros.org/question/323102/getting-eigen3-matrix3feulerangles-values-similar-to-tf2-matrix3x3fgetrpy-roll-pitch-yaw/
+            auto eulerL = foundLink->second.linear().eulerAngles(0, 1, 2);
+            auto eulerR = foundLink->second.rotation().eulerAngles(0, 1, 2);
+            Eigen::Quaterniond q(foundLink->second.rotation());
+            auto eulerQ = q.toRotationMatrix().eulerAngles(0, 1, 2);
+            std::cout << "Euler from Eigen: " << angles::to_degrees(eulerL[0]) << ","
+                << angles::to_degrees(eulerL[1]) << "," << angles::to_degrees(eulerL[2])
+                << " : " << angles::to_degrees(eulerR[0]) << "," << angles::to_degrees(eulerR[1])
+                << "," << angles::to_degrees(eulerR[2])
+                << " : " << angles::to_degrees(eulerQ[0]) << "," << angles::to_degrees(eulerQ[1])
+                << "," << angles::to_degrees(eulerQ[2]) << std::endl;
+            aligned.linear() = foundLink->second.linear().inverse() * aligned.linear();
+#endif
+#ifdef DEBUG
+            auto link = Eigen::toMsg(foundLink->second);
+            tf2::Quaternion q(link.orientation.x, link.orientation.y,
+                link.orientation.z, link.orientation.w);
+            double roll = 0.0, pitch = 0.0, yaw = 0.0;
+  		    tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+            std::cout << "link roll:" << angles::to_degrees(roll) << ",pitch:" <<
+                angles::to_degrees(pitch) << ",yaw:" << angles::to_degrees(yaw) << std::endl;
+#endif
+            Eigen::Isometry3d transformedLink(foundLink->second);
             if (transform_to_tcp_)
             {
                 tf2::doTransform(foundLink->second, transformedLink, *transform_to_tcp_);
-                auto link = Eigen::toMsg(transformedLink);
-                tf2::Quaternion q(link.orientation.x, link.orientation.y,
-                    link.orientation.z, link.orientation.w);
-                double roll = 0.0, pitch = 0.0, yaw = 0.0;
-  		        tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
-                std::cout << "link roll:" << angles::to_degrees(roll) << ",pitch:" <<
-                    angles::to_degrees(pitch) << ",yaw:" << angles::to_degrees(yaw) << std::endl;
             }
+            auto linkMsg = Eigen::toMsg(transformedLink);
+            tf2::Quaternion q(linkMsg.orientation.x, linkMsg.orientation.y,
+                linkMsg.orientation.z, linkMsg.orientation.w);
+            double roll = 0.0, pitch = 0.0, yaw = 0.0;
+  		    tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+#ifdef DEBUG
+            std::cout << "link trans to tcp roll:" << angles::to_degrees(roll) << ",pitch:" <<
+                angles::to_degrees(pitch) << ",yaw:" << angles::to_degrees(yaw) << std::endl;
 #endif
+		    tf2::Quaternion orientation;
+		    orientation.setRPY(transformedRoll - roll, transformedPitch - pitch, transformedYaw - yaw);
+            tcpMsg.orientation = tf2::toMsg(orientation);
         }
 
         if (pub_pose_)
@@ -320,7 +359,7 @@ namespace whi_3DObjectTracking
             whi_interfaces::WhiTcpPose msg;
             msg.tcp_pose.header.frame_id = pose_frame_;
             msg.tcp_pose.header.stamp = ros::Time::now();
-            msg.tcp_pose.pose = Eigen::toMsg(transformed);
+            msg.tcp_pose.pose = tcpMsg;
 
             scalingEuler(msg.tcp_pose.pose.orientation, euler_multipliers_);
 
@@ -330,7 +369,7 @@ namespace whi_3DObjectTracking
         {
             std::thread
             {
-                [this, transformed]() -> void
+                [this, tcpMsg]() -> void
                 {
                     this->service_standby_.store(false);
 
@@ -339,7 +378,7 @@ namespace whi_3DObjectTracking
                         whi_interfaces::WhiSrvTcpPose srv;
                         srv.request.tcp_pose.header.frame_id = this->pose_frame_;
                         srv.request.tcp_pose.header.stamp = ros::Time::now();
-                        srv.request.tcp_pose.pose = Eigen::toMsg(transformed);
+                        srv.request.tcp_pose.pose = tcpMsg;
 
                         scalingEuler(srv.request.tcp_pose.pose.orientation, euler_multipliers_);
 #ifdef DEBUG
@@ -438,7 +477,7 @@ namespace whi_3DObjectTracking
         tf2::Quaternion q(Src.x, Src.y, Src.z, Src.w);
         double roll = 0.0, pitch = 0.0, yaw = 0.0;
   		tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
-#ifdef DEBUG
+#ifndef DEBUG
         std::cout << "original roll:" << angles::to_degrees(roll) << ",pitch:" <<
             angles::to_degrees(pitch) << ",yaw:" << angles::to_degrees(yaw) << std::endl;
 #endif
