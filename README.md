@@ -44,6 +44,11 @@ source <your workspace>/devel/setup.bash
 
 **tcp_pose**(whi_interfaces::WhiTcpPose): the estimated 6DOF pose
 
+## Service
+
+**tcp_pose**(whi_interfaces::WhiSrvTcpPose): the estimated 6DOF pose
+> Service has higher priority than topic. It would preempt the topic if both are set in the config file
+
 ## Config
 
 ```
