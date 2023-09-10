@@ -345,12 +345,14 @@ namespace whi_3DObjectTracking
                 linkMsg.orientation.z, linkMsg.orientation.w);
             double roll = 0.0, pitch = 0.0, yaw = 0.0;
   		    tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
-#ifdef DEBUG
+#ifndef DEBUG
             std::cout << "link trans to tcp roll:" << angles::to_degrees(roll) << ",pitch:" <<
                 angles::to_degrees(pitch) << ",yaw:" << angles::to_degrees(yaw) << std::endl;
 #endif
 		    tf2::Quaternion orientation;
-		    orientation.setRPY(transformedRoll - roll, transformedPitch - pitch, transformedYaw - yaw);
+		    orientation.setRPY(transformedRoll - signOf(transformedRoll) * roll,
+                transformedPitch - signOf(transformedPitch) * pitch,
+                transformedYaw - signOf(transformedYaw) * yaw);
             tcpMsg.orientation = tf2::toMsg(orientation);
         }
 
