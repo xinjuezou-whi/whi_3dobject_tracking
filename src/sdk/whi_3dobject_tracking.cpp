@@ -345,15 +345,14 @@ namespace whi_3DObjectTracking
                 linkMsg.orientation.z, linkMsg.orientation.w);
             double roll = 0.0, pitch = 0.0, yaw = 0.0;
   		    tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
-#ifndef DEBUG
+#ifdef DEBUG
             std::cout << "link trans to tcp roll:" << angles::to_degrees(roll) << ",pitch:" <<
                 angles::to_degrees(pitch) << ",yaw:" << angles::to_degrees(yaw) << std::endl;
 #endif
 		    tf2::Quaternion orientation;
-		    orientation.setRPY(transformedRoll - signOf(transformedRoll) * roll,
-                transformedPitch - signOf(transformedPitch) * pitch,
-                transformedYaw - signOf(transformedYaw) * yaw);
-            tcpMsg.orientation = tf2::toMsg(orientation);
+		    orientation.setRPY(-(transformedRoll + signOf(transformedRoll) * roll),
+                -(transformedPitch + signOf(transformedPitch) * pitch),
+                -(transformedYaw + signOf(transformedYaw) * yaw));
         }
 
         if (pub_pose_)
@@ -378,16 +377,16 @@ namespace whi_3DObjectTracking
                     if (this->client_pose_->waitForExistence(ros::Duration(3.0)))
 				    {
                         whi_interfaces::WhiSrvTcpPose srv;
-                        srv.request.tcp_pose.header.frame_id = this->pose_frame_;
-                        srv.request.tcp_pose.header.stamp = ros::Time::now();
-                        srv.request.tcp_pose.pose = tcpMsg;
+                        srv.request.pose.tcp_pose.header.frame_id = this->pose_frame_;
+                        srv.request.pose.tcp_pose.header.stamp = ros::Time::now();
+                        srv.request.pose.tcp_pose.pose = tcpMsg;
 
-                        scalingEuler(srv.request.tcp_pose.pose.orientation, euler_multipliers_);
+                        scalingEuler(srv.request.pose.tcp_pose.pose.orientation, euler_multipliers_);
 #ifdef DEBUG
-                        srv.request.tcp_pose.pose.orientation.x = 0.0;
-                        srv.request.tcp_pose.pose.orientation.y = 0.0;
-                        srv.request.tcp_pose.pose.orientation.z = 0.0;
-                        srv.request.tcp_pose.pose.orientation.w = 1.0;
+                        srv.request.pose.tcp_pose.pose.orientation.x = 0.0;
+                        srv.request.pose.tcp_pose.pose.orientation.y = 0.0;
+                        srv.request.pose.tcp_pose.pose.orientation.z = 0.0;
+                        srv.request.pose.tcp_pose.pose.orientation.w = 1.0;
 #endif
                         this->client_pose_->call(srv);
 				    }
