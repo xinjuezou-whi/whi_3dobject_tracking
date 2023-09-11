@@ -82,12 +82,16 @@ namespace whi_3DObjectTracking
                 q.setRPY(0.0, 0.0, 0.0);
             }
             
+            tf2::Stamped<tf2::Transform> stamped;
             if (trans.size() >= 3)
             {
-                tf2::Stamped<tf2::Transform> stamped;
                 stamped.setData(tf2::Transform(q, tf2::Vector3(trans[0], trans[1], trans[2])));
-                transform_to_tcp_ = std::make_shared<geometry_msgs::TransformStamped>(tf2::toMsg(stamped));
             }
+            else
+            {
+                stamped.setData(tf2::Transform(q, tf2::Vector3(0.0, 0.0, 0.0)));
+            }
+            transform_to_tcp_ = std::make_shared<geometry_msgs::TransformStamped>(tf2::toMsg(stamped));
         }
         std::vector<double> transformedRef;
         node_handle_->getParam("transformed_reference", transformedRef);
