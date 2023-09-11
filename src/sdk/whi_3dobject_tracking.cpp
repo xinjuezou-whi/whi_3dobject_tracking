@@ -15,7 +15,6 @@ All text above must be included in any redistribution.
 
 ******************************************************************/
 #include "whi_3dobject_tracking/whi_3dobject_tracking.h"
-#include "whi_interfaces/WhiTcpPose.h"
 #include "whi_interfaces/WhiSrvTcpPose.h"
 
 #include <tf2_eigen/tf2_eigen.h>
