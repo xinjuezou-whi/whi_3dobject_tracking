@@ -381,7 +381,7 @@ namespace whi_3DObjectTracking
 				    {
                         whi_interfaces::WhiSrvTcpPose srv;
                         srv.request.pose.tcp_pose.header.frame_id = this->pose_frame_;
-                        srv.request.pose.tcp_pose.header.stamp = ros::Time::now();
+                        srv.request.pose.tcp_pose.header.stamp = ros::Time(0);
                         srv.request.pose.tcp_pose.pose = tcpMsg;
 
                         scalingEuler(srv.request.pose.tcp_pose.pose.orientation, euler_multipliers_);
