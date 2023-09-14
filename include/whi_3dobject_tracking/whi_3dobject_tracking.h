@@ -41,11 +41,15 @@ namespace whi_3DObjectTracking
         void initM3t();
         void poseCallback(const std::string& Object, const Eigen::Isometry3d& Pose);
         void colorImageCallback(const std::string& Name, const cv::Mat& Image);
+        void colorOverlayImageCallback(const std::string& Name, const cv::Mat& Image);
         void depthImageCallback(const std::string& Name, const cv::Mat& Image);
+        void depthOverlayImageCallback(const std::string& Name, const cv::Mat& Image);
 
     protected:
         static void toImageMsg(const cv::Mat& SrcImg, const std::string& SrcEncoding,
             sensor_msgs::Image& RosImage);
+        static void publishImage(std::shared_ptr<image_transport::Publisher> Publisher,
+            const std::string& Name, const cv::Mat& Image);
         static void toggleRightAndLeftHand(const Eigen::Isometry3d& Src, Eigen::Isometry3d& Dst);
         static void scalingEuler(geometry_msgs::Quaternion& Src, const std::array<double, 3>& Multiplier);
 
@@ -54,8 +58,10 @@ namespace whi_3DObjectTracking
         std::thread th_tracking_;
         std::unique_ptr<ros::Publisher> pub_pose_{ nullptr };
         std::unique_ptr<ros::ServiceClient> client_pose_{ nullptr };
-        std::unique_ptr<image_transport::Publisher> pub_color_{ nullptr };
-        std::unique_ptr<image_transport::Publisher> pub_depth_{ nullptr };
+        std::shared_ptr<image_transport::Publisher> pub_color_{ nullptr };
+        std::shared_ptr<image_transport::Publisher> pub_color_overlay_{ nullptr };
+        std::shared_ptr<image_transport::Publisher> pub_depth_{ nullptr };
+        std::shared_ptr<image_transport::Publisher> pub_depth_overlay_{ nullptr };
         std::unique_ptr<image_transport::ImageTransport> image_transport_{ nullptr };
         std::string pose_frame_{ "world" };
         std::shared_ptr<geometry_msgs::TransformStamped> transform_to_tcp_{ nullptr };

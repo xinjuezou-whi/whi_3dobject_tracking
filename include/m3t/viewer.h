@@ -60,7 +60,7 @@ class Viewer
   bool set_up() const;
 
   // view image register
-  void registerViewImageCallback(ViewImageFunc Func);
+  void registerViewImageCallback(ViewImageFunc RawFunc, ViewImageFunc OverlayFunc);
 
  protected:
   // Constructor
@@ -80,7 +80,8 @@ class Viewer
   bool set_up_ = false;
 
   // view image callback
-  ViewImageFunc view_image_func_{ nullptr };
+  ViewImageFunc raw_image_func_{ nullptr };
+  ViewImageFunc overlay_image_func_{ nullptr };
 };
 
 /**

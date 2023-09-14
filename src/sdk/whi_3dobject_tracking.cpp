@@ -119,13 +119,27 @@ namespace whi_3DObjectTracking
         node_handle_->param("color_topic", colorTopic, std::string());
         if (!colorTopic.empty())
         {
-            pub_color_ = std::make_unique<image_transport::Publisher>(image_transport_->advertise(colorTopic, 1));
+            pub_color_ = std::make_shared<image_transport::Publisher>(image_transport_->advertise(colorTopic, 1));
+        }
+        std::string colorOverlayTopic;
+        node_handle_->param("color_overlay_topic", colorOverlayTopic, std::string());
+        if (!colorOverlayTopic.empty())
+        {
+            pub_color_overlay_ = std::make_shared<image_transport::Publisher>(
+                image_transport_->advertise(colorOverlayTopic, 1));
         }
         std::string depthTopic;
         node_handle_->param("depth_topic", depthTopic, std::string());
         if (!depthTopic.empty())
         {
-            pub_depth_ = std::make_unique<image_transport::Publisher>(image_transport_->advertise(depthTopic, 1));
+            pub_depth_ = std::make_shared<image_transport::Publisher>(image_transport_->advertise(depthTopic, 1));
+        }
+        std::string depthOverlayTopic;
+        node_handle_->param("depth_overlay_topic", depthOverlayTopic, std::string());
+        if (!depthOverlayTopic.empty())
+        {
+            pub_depth_overlay_ = std::make_shared<image_transport::Publisher>(
+                image_transport_->advertise(depthOverlayTopic, 1));
         }
         // service client
         std::string poseService;
@@ -173,6 +187,8 @@ namespace whi_3DObjectTracking
             auto colorViewer{ std::make_shared<m3t::NormalColorViewer>("color_viewer",
                 colorCamera, rendererGeometry) };
             colorViewer->registerViewImageCallback(std::bind(&TriDObjectTracking::colorImageCallback,
+                this, std::placeholders::_1, std::placeholders::_2),
+                std::bind(&TriDObjectTracking::colorOverlayImageCallback,
                 this, std::placeholders::_1, std::placeholders::_2));
             //if (kSaveImages) color_viewer_ptr->StartSavingImages(save_directory, "bmp");
             tracker->AddViewer(colorViewer);
@@ -182,6 +198,8 @@ namespace whi_3DObjectTracking
             auto depthViewer{ std::make_shared<m3t::NormalDepthViewer>("depth_viewer",
                 depthCamera, rendererGeometry, 0.3f, 1.0f)};
             depthViewer->registerViewImageCallback(std::bind(&TriDObjectTracking::depthImageCallback,
+                this, std::placeholders::_1, std::placeholders::_2),
+                std::bind(&TriDObjectTracking::depthOverlayImageCallback,
                 this, std::placeholders::_1, std::placeholders::_2));
             //if (kSaveImages) depth_viewer_ptr->StartSavingImages(save_directory, "bmp");
             tracker->AddViewer(depthViewer);
@@ -406,26 +424,22 @@ namespace whi_3DObjectTracking
 
     void TriDObjectTracking::colorImageCallback(const std::string& Name, const cv::Mat& Image)
     {
-        if (pub_color_)
-        {
-            sensor_msgs::Image imgMsg;
-            imgMsg.header.stamp = ros::Time::now();
-            imgMsg.header.frame_id = Name;
-            toImageMsg(Image, sensor_msgs::image_encodings::BGR8, imgMsg);
-            pub_color_->publish(imgMsg);
-        }
+        publishImage(pub_color_, Name, Image);
+    }
+
+    void TriDObjectTracking::colorOverlayImageCallback(const std::string& Name, const cv::Mat& Image)
+    {
+        publishImage(pub_color_overlay_, Name, Image);
     }
 
     void TriDObjectTracking::depthImageCallback(const std::string& Name, const cv::Mat& Image)
     {
-        if (pub_depth_)
-        {
-            sensor_msgs::Image imgMsg;
-            imgMsg.header.stamp = ros::Time::now();
-            imgMsg.header.frame_id = Name;
-            toImageMsg(Image, sensor_msgs::image_encodings::BGR8, imgMsg);
-            pub_depth_->publish(imgMsg);
-        }
+        publishImage(pub_depth_, Name, Image);
+    }
+
+    void TriDObjectTracking::depthOverlayImageCallback(const std::string& Name, const cv::Mat& Image)
+    {
+        publishImage(pub_depth_overlay_, Name, Image);
     }
 
     void TriDObjectTracking::toImageMsg(const cv::Mat& SrcImg, const std::string& SrcEncoding,
@@ -454,6 +468,19 @@ namespace whi_3DObjectTracking
                 rosDataPtr += RosImage.step;
                 dataPtr += SrcImg.step;
             }
+        }
+    }
+
+    void TriDObjectTracking::publishImage(std::shared_ptr<image_transport::Publisher> Publisher,
+        const std::string& Name, const cv::Mat& Image)
+    {
+        if (Publisher)
+        {
+            sensor_msgs::Image imgMsg;
+            imgMsg.header.stamp = ros::Time::now();
+            imgMsg.header.frame_id = Name;
+            toImageMsg(Image, sensor_msgs::image_encodings::BGR8, imgMsg);
+            Publisher->publish(imgMsg);
         }
     }
 

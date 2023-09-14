@@ -55,9 +55,9 @@ Viewer::Viewer(const std::string &name,
 
 void Viewer::DisplayAndSaveImage(int save_index, const cv::Mat &image)
 {
-  if (view_image_func_)
+  if (overlay_image_func_)
   {
-    view_image_func_(name_, image);
+    overlay_image_func_(name_, image);
   }
   if (display_images_)
   {
@@ -72,9 +72,10 @@ void Viewer::DisplayAndSaveImage(int save_index, const cv::Mat &image)
   }
 }
 
-void Viewer::registerViewImageCallback(ViewImageFunc Func)
+void Viewer::registerViewImageCallback(ViewImageFunc RawFunc, ViewImageFunc OverlayFunc)
 {
-  view_image_func_ = Func;
+  raw_image_func_ = RawFunc;
+  overlay_image_func_ = OverlayFunc;
 }
 
 void ColorViewer::set_color_camera_ptr(

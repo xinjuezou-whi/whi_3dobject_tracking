@@ -166,6 +166,11 @@ bool NormalColorViewer::UpdateViewer(int save_index) {
   DisplayAndSaveImage(save_index, CalculateAlphaBlend(this,
     color_camera_ptr_->image(), renderer_.normal_image(), opacity_));
 
+  if (raw_image_func_)
+  {
+    raw_image_func_(name_, color_camera_ptr_->image());
+  }
+
   return true;
 }
 
@@ -324,6 +329,11 @@ bool NormalDepthViewer::UpdateViewer(int save_index) {
                normalized_depth_image_rgb, cv::COLOR_GRAY2BGR);
   DisplayAndSaveImage(save_index, CalculateAlphaBlend(nullptr,
     normalized_depth_image_rgb, renderer_.normal_image(), opacity_));
+
+  if (raw_image_func_)
+  {
+    raw_image_func_(name_, normalized_depth_image_rgb);
+  }
 
   return true;
 }
