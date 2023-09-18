@@ -49,7 +49,7 @@ namespace whi_3DObjectTracking
         static void toImageMsg(const cv::Mat& SrcImg, const std::string& SrcEncoding,
             sensor_msgs::Image& RosImage);
         static void publishImage(std::shared_ptr<image_transport::Publisher> Publisher,
-            const std::string& Name, const cv::Mat& Image);
+            const std::string& Name, const cv::Mat& Image, const std::string& Encoding);
         static void toggleRightAndLeftHand(const Eigen::Isometry3d& Src, Eigen::Isometry3d& Dst);
         static void scalingEuler(geometry_msgs::Quaternion& Src, const std::array<double, 3>& Multiplier);
 
