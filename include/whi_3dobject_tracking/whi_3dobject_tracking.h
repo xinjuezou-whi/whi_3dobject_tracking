@@ -49,7 +49,7 @@ namespace whi_3DObjectTracking
         static void toImageMsg(const cv::Mat& SrcImg, const std::string& SrcEncoding,
             sensor_msgs::Image& RosImage);
         static void publishImage(std::shared_ptr<image_transport::Publisher> Publisher,
-            const std::string& Name, const cv::Mat& Image, const std::string& Encoding);
+            const std::string& Name, const cv::Mat& Image, const std::string& Encoding, unsigned long Seq = 0);
         static void toggleRightAndLeftHand(const Eigen::Isometry3d& Src, Eigen::Isometry3d& Dst);
         static void scalingEuler(geometry_msgs::Quaternion& Src, const std::array<double, 3>& Multiplier);
 
@@ -69,5 +69,6 @@ namespace whi_3DObjectTracking
         std::atomic_bool service_standby_{ true };
         std::map<std::string, Eigen::Isometry3d> link_2_world_pose_map_;
         std::array<double, 3> euler_multipliers_;
+        unsigned long seq_{ 0 };
 	};
 } // namespace whi_3DObjectTracking

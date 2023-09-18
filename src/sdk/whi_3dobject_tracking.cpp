@@ -424,22 +424,22 @@ namespace whi_3DObjectTracking
 
     void TriDObjectTracking::colorImageCallback(const std::string& Name, const cv::Mat& Image)
     {
-        publishImage(pub_color_, Name, Image, sensor_msgs::image_encodings::BGR8);
+        publishImage(pub_color_, Name, Image, sensor_msgs::image_encodings::BGR8, seq_++);
     }
 
     void TriDObjectTracking::colorOverlayImageCallback(const std::string& Name, const cv::Mat& Image)
     {
-        publishImage(pub_color_overlay_, Name, Image, sensor_msgs::image_encodings::BGR8);
+        publishImage(pub_color_overlay_, Name, Image, sensor_msgs::image_encodings::BGR8, seq_);
     }
 
     void TriDObjectTracking::depthImageCallback(const std::string& Name, const cv::Mat& Image)
     {
-        publishImage(pub_depth_, Name, Image, "spassthrough");
+        publishImage(pub_depth_, Name, Image, "passthrough", seq_);
     }
 
     void TriDObjectTracking::depthOverlayImageCallback(const std::string& Name, const cv::Mat& Image)
     {
-        publishImage(pub_depth_overlay_, Name, Image, sensor_msgs::image_encodings::BGR8);
+        publishImage(pub_depth_overlay_, Name, Image, sensor_msgs::image_encodings::BGR8, seq_);
     }
 
     void TriDObjectTracking::toImageMsg(const cv::Mat& SrcImg, const std::string& SrcEncoding,
@@ -472,11 +472,12 @@ namespace whi_3DObjectTracking
     }
 
     void TriDObjectTracking::publishImage(std::shared_ptr<image_transport::Publisher> Publisher,
-        const std::string& Name, const cv::Mat& Image, const std::string& Encoding)
+        const std::string& Name, const cv::Mat& Image, const std::string& Encoding, unsigned long Seq/* = 0*/)
     {
         if (Publisher)
         {
             sensor_msgs::Image imgMsg;
+            imgMsg.header.seq = Seq;
             imgMsg.header.stamp = ros::Time::now();
             imgMsg.header.frame_id = Name;
             toImageMsg(Image, Encoding, imgMsg);
