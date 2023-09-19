@@ -332,7 +332,7 @@ bool NormalDepthViewer::UpdateViewer(int save_index) {
 
   if (raw_image_func_)
   {
-    raw_image_func_(name_, normalized_depth_image_rgb);
+    raw_image_func_(name_, depth_camera_ptr_->image());
   }
 
   return true;
