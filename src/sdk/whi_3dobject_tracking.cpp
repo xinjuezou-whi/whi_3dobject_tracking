@@ -10,7 +10,7 @@ Dependencies:
 
 Written by Xinjue Zou, xinjue.zou@outlook.com
 
-GNU General Public License, check LICENSE for more information.
+Apache License Version 2.0, check LICENSE for more information.
 All text above must be included in any redistribution.
 
 ******************************************************************/
@@ -182,28 +182,26 @@ namespace whi_3DObjectTracking
         auto colorCamera{ std::make_shared<m3t::RealSenseColorCamera>("realsense_color") };
         auto depthCamera{ std::make_shared<m3t::RealSenseDepthCamera>("realsense_depth") };
         // setup viewers
-        if (viewColor)
-        {
-            auto colorViewer{ std::make_shared<m3t::NormalColorViewer>("color_viewer",
-                colorCamera, rendererGeometry) };
-            colorViewer->registerViewImageCallback(std::bind(&TriDObjectTracking::colorImageCallback,
-                this, std::placeholders::_1, std::placeholders::_2),
-                std::bind(&TriDObjectTracking::colorOverlayImageCallback,
-                this, std::placeholders::_1, std::placeholders::_2));
-            //if (kSaveImages) color_viewer_ptr->StartSavingImages(save_directory, "bmp");
-            tracker->AddViewer(colorViewer);
-        }
-        if (viewDepth)
-        {
-            auto depthViewer{ std::make_shared<m3t::NormalDepthViewer>("depth_viewer",
-                depthCamera, rendererGeometry, 0.3f, 1.0f)};
-            depthViewer->registerViewImageCallback(std::bind(&TriDObjectTracking::depthImageCallback,
-                this, std::placeholders::_1, std::placeholders::_2),
-                std::bind(&TriDObjectTracking::depthOverlayImageCallback,
-                this, std::placeholders::_1, std::placeholders::_2));
-            //if (kSaveImages) depth_viewer_ptr->StartSavingImages(save_directory, "bmp");
-            tracker->AddViewer(depthViewer);
-        }
+        // color viewer
+        auto colorViewer{ std::make_shared<m3t::NormalColorViewer>("color_viewer",
+            colorCamera, rendererGeometry) };
+        colorViewer->set_display_images(viewColor);
+        colorViewer->registerViewImageCallback(std::bind(&TriDObjectTracking::colorImageCallback,
+            this, std::placeholders::_1, std::placeholders::_2),
+            std::bind(&TriDObjectTracking::colorOverlayImageCallback,
+            this, std::placeholders::_1, std::placeholders::_2));
+        //if (kSaveImages) color_viewer_ptr->StartSavingImages(save_directory, "bmp");
+        tracker->AddViewer(colorViewer);
+        // depth viewer
+        auto depthViewer{ std::make_shared<m3t::NormalDepthViewer>("depth_viewer",
+            depthCamera, rendererGeometry, 0.3f, 1.0f)};
+        depthViewer->set_display_images(viewDepth);
+        depthViewer->registerViewImageCallback(std::bind(&TriDObjectTracking::depthImageCallback,
+            this, std::placeholders::_1, std::placeholders::_2),
+            std::bind(&TriDObjectTracking::depthOverlayImageCallback,
+            this, std::placeholders::_1, std::placeholders::_2));
+        //if (kSaveImages) depth_viewer_ptr->StartSavingImages(save_directory, "bmp");
+        tracker->AddViewer(depthViewer);
         // setup depth renderer
         auto colorDepthRenderer{ std::make_shared<m3t::FocusedBasicDepthRenderer>("color_depth_renderer",
             rendererGeometry, colorCamera) };
