@@ -291,8 +291,10 @@ bool RealSenseDepthCamera::UpdateImage(bool synchronized) {
 
   // Get frameset and copy data to image
   realsense_.UpdateCapture(realsense_id_, synchronized);
+  // post processing to filling the hole
+  rs2::hole_filling_filter holeFillingFilter;
   cv::Mat{cv::Size{intrinsics_.width, intrinsics_.height}, CV_16UC1,
-          (void *)realsense_.frameset().get_depth_frame().get_data(),
+          (void *)holeFillingFilter.process(realsense_.frameset().get_depth_frame()).get_data(),
           cv::Mat::AUTO_STEP}
       .copyTo(image_);
 
