@@ -52,6 +52,8 @@ namespace whi_3DObjectTracking
             const std::string& Name, const cv::Mat& Image, const std::string& Encoding, unsigned long Seq = 0);
         static void toggleRightAndLeftHand(const Eigen::Isometry3d& Src, Eigen::Isometry3d& Dst);
         static void scalingEuler(geometry_msgs::Quaternion& Src, const std::array<double, 3>& Multiplier);
+        static bool retrieveTransform(std::shared_ptr<ros::NodeHandle> Node,
+            const std::string ParamName, geometry_msgs::TransformStamped& Trans);
 
     protected:
         std::shared_ptr<ros::NodeHandle> node_handle_{ nullptr };
@@ -64,8 +66,9 @@ namespace whi_3DObjectTracking
         std::shared_ptr<image_transport::Publisher> pub_depth_overlay_{ nullptr };
         std::unique_ptr<image_transport::ImageTransport> image_transport_{ nullptr };
         std::string pose_frame_{ "world" };
-        std::shared_ptr<geometry_msgs::TransformStamped> transform_to_tcp_{ nullptr };
-        std::array<double, 3> transformed_reference_;
+        std::shared_ptr<geometry_msgs::TransformStamped> world_to_tcp_{ nullptr };
+        std::shared_ptr<geometry_msgs::TransformStamped> object_to_tcp_{ nullptr };
+        std::array<double, 3> position_reference_;
         std::atomic_bool service_standby_{ true };
         std::map<std::string, Eigen::Isometry3d> link_2_world_pose_map_;
         std::array<double, 3> euler_multipliers_;

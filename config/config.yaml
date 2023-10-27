@@ -18,10 +18,11 @@ whi_3dobject_tracking:
   pose_service: tcp_pose
   pose_frame: camera
   # chin: [0, 0, 0, -1.5708, 0, -1.5708] and [0.18, 0, 0]
-  # transform_to_tcp: [0, 0, 0, -1.5708, 0, -1.5708]
-  # transformed_reference: [0.18, 0, 0]
+  # world_to_tcp: [0, 0, 0, -1.5708, 0, -1.5708]
+  # object_to_tcp: [0, 0, 0, 0, -1.5708, 0]
+  # position_reference: [0.18, 0, 0]
   # ur: [0, 0, 0, 1.5708, 0, 0] and [0, -0.18, 0]
-  transform_to_tcp: [0, 0, 0, 1.5708, 0, 0]
-  transformed_reference: [0, -0.18, 0]
-  # euler_muliplier: [0.2, 0.2, 0.2]
+  world_to_tcp: [0, 0, 0, 1.5708, 0, 0]
+  object_to_tcp: [0, 0, 0, 1.5708, -1.5708, 0]
+  position_reference: [0, -0.18, 0]
   euler_muliplier: [0.0, 0.0, 0.0]

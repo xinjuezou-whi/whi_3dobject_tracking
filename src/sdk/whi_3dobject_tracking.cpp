@@ -69,35 +69,20 @@ namespace whi_3DObjectTracking
         /// init infrastructure
         // pose frame
         node_handle_->param("pose_frame", pose_frame_, std::string("world"));
-        std::vector<double> trans;
-        if (node_handle_->getParam("transform_to_tcp", trans))
+        geometry_msgs::TransformStamped trans;
+        if (retrieveTransform(node_handle_, "world_to_tcp", trans))
         {
-            tf2::Quaternion q;
-            if (trans.size() == 6)
-            {
-                q.setRPY(trans[3], trans[4], trans[5]);
-            }
-            else
-            {
-                q.setRPY(0.0, 0.0, 0.0);
-            }
-            
-            tf2::Stamped<tf2::Transform> stamped;
-            if (trans.size() >= 3)
-            {
-                stamped.setData(tf2::Transform(q, tf2::Vector3(trans[0], trans[1], trans[2])));
-            }
-            else
-            {
-                stamped.setData(tf2::Transform(q, tf2::Vector3(0.0, 0.0, 0.0)));
-            }
-            transform_to_tcp_ = std::make_shared<geometry_msgs::TransformStamped>(tf2::toMsg(stamped));
+            world_to_tcp_ = std::make_shared<geometry_msgs::TransformStamped>(trans);
         }
-        std::vector<double> transformedRef;
-        node_handle_->getParam("transformed_reference", transformedRef);
-        for (size_t i = 0; i < transformedRef.size(); ++i)
+        if (retrieveTransform(node_handle_, "object_to_tcp", trans))
         {
-            transformed_reference_[i] = transformedRef[i];
+            object_to_tcp_ = std::make_shared<geometry_msgs::TransformStamped>(trans);
+        }
+        std::vector<double> positionRef;
+        node_handle_->getParam("position_reference", positionRef);
+        for (size_t i = 0; i < positionRef.size(); ++i)
+        {
+            position_reference_[i] = positionRef[i];
         }
         std::vector<double> multipliers;
         node_handle_->getParam("euler_muliplier", multipliers);
@@ -360,14 +345,17 @@ namespace whi_3DObjectTracking
         // transform to tcp frame if there is
         Eigen::Isometry3d transformed;
         Eigen::fromMsg(alignedMsg, transformed);
-        if (transform_to_tcp_)
+        if (world_to_tcp_)
         {
-            tf2::doTransform(transformed, transformed, *transform_to_tcp_);
+            // the position
+            tf2::doTransform(transformed, transformed, *world_to_tcp_);
             for (size_t i = 0; i < 3; ++i)
             {
-                transformed.matrix()(i, 3) = transformed.matrix()(i, 3) - transformed_reference_[i];
+                transformed.matrix()(i, 3) = transformed.matrix()(i, 3) - position_reference_[i];
             }
+            alignedMsg.position = Eigen::toMsg(transformed).position;
 
+            // the orientation
             Eigen::Isometry3d transEuler(transformed);
             tf2::Quaternion q(alignedMsg.orientation.x, alignedMsg.orientation.y,
                 alignedMsg.orientation.z, alignedMsg.orientation.w);
@@ -376,19 +364,11 @@ namespace whi_3DObjectTracking
             transEuler.matrix()(0, 3) = roll;
             transEuler.matrix()(1, 3) = pitch;
             transEuler.matrix()(2, 3) = yaw;
-            tf2::doTransform(transEuler, transEuler, *transform_to_tcp_);
+            tf2::doTransform(transEuler, transEuler, *object_to_tcp_);
             tf2::Quaternion orientation;
 		    orientation.setRPY(transEuler.matrix()(0, 3), transEuler.matrix()(1, 3), transEuler.matrix()(2, 3));
             alignedMsg.orientation = tf2::toMsg(orientation);
         }
-#ifdef DEBUG
-        tf2::Quaternion q(transformedMsg.orientation.x, transformedMsg.orientation.y,
-            transformedMsg.orientation.z, transformedMsg.orientation.w);
-        double transformedRoll = 0.0, transformedPitch = 0.0, transformedYaw = 0.0;
-  		tf2::Matrix3x3(q).getRPY(transformedRoll, transformedPitch, transformedYaw);
-        std::cout << "trans to tcp roll:" << angles::to_degrees(transformedRoll) << ",pitch:" <<
-            angles::to_degrees(transformedPitch) << ",yaw:" << angles::to_degrees(transformedYaw) << std::endl;
-#endif
 
         if (pub_pose_)
         {
@@ -534,5 +514,38 @@ namespace whi_3DObjectTracking
         std::cout << "after roll:" << angles::to_degrees(roll) << ",pitch:" <<
             angles::to_degrees(pitch) << ",yaw:" << angles::to_degrees(yaw) << std::endl;
 #endif
+    }
+
+    bool TriDObjectTracking::retrieveTransform(std::shared_ptr<ros::NodeHandle> Node,
+        const std::string ParamName, geometry_msgs::TransformStamped& Trans)
+    {
+        std::vector<double> contents;
+        if (Node && Node->getParam(ParamName, contents))
+        {
+            tf2::Quaternion q;
+            if (contents.size() == 6)
+            {
+                q.setRPY(contents[3], contents[4], contents[5]);
+            }
+            else
+            {
+                q.setRPY(0.0, 0.0, 0.0);
+            }
+            
+            tf2::Stamped<tf2::Transform> stamped;
+            if (contents.size() >= 3)
+            {
+                stamped.setData(tf2::Transform(q, tf2::Vector3(contents[0], contents[1], contents[2])));
+            }
+            else
+            {
+                stamped.setData(tf2::Transform(q, tf2::Vector3(0.0, 0.0, 0.0)));
+            }
+
+            Trans = tf2::toMsg(stamped);
+            return true;
+        }
+
+        return false;
     }
 } // namespace whi_3DObjectTracking
