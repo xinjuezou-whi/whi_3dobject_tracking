@@ -364,7 +364,7 @@ namespace whi_3DObjectTracking
             transEuler.matrix()(2, 3) = yaw;
             tf2::doTransform(transEuler, transEuler, *object_to_tcp_);
             tf2::Quaternion orientation;
-		    orientation.setRPY(-transEuler.matrix()(0, 3), transEuler.matrix()(1, 3), transEuler.matrix()(2, 3));
+		    orientation.setRPY(transEuler.matrix()(0, 3), transEuler.matrix()(1, 3), transEuler.matrix()(2, 3));
             alignedMsg.orientation = tf2::toMsg(orientation);
         }
 
