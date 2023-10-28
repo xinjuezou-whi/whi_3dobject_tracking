@@ -336,9 +336,7 @@ namespace whi_3DObjectTracking
                 angles::to_degrees(linkPitch) << ",yaw:" << angles::to_degrees(linkYaw) << std::endl;
 #endif
 		    tf2::Quaternion orientation;
-		    orientation.setRPY(-(linkRoll + signOf(linkRoll) * roll),
-                -(linkPitch + signOf(linkPitch) * pitch),
-                -(linkYaw + signOf(linkYaw) * yaw));
+		    orientation.setRPY(linkRoll - roll, linkPitch - pitch, linkYaw - yaw);
             alignedMsg.orientation = tf2::toMsg(orientation);
         }
 
@@ -366,7 +364,7 @@ namespace whi_3DObjectTracking
             transEuler.matrix()(2, 3) = yaw;
             tf2::doTransform(transEuler, transEuler, *object_to_tcp_);
             tf2::Quaternion orientation;
-		    orientation.setRPY(transEuler.matrix()(0, 3), transEuler.matrix()(1, 3), transEuler.matrix()(2, 3));
+		    orientation.setRPY(-transEuler.matrix()(0, 3), transEuler.matrix()(1, 3), transEuler.matrix()(2, 3));
             alignedMsg.orientation = tf2::toMsg(orientation);
         }
 
@@ -503,7 +501,7 @@ namespace whi_3DObjectTracking
         tf2::Quaternion q(Src.x, Src.y, Src.z, Src.w);
         double roll = 0.0, pitch = 0.0, yaw = 0.0;
   		tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
-#ifndef DEBUG
+#ifdef DEBUG
         std::cout << "original roll:" << angles::to_degrees(roll) << ",pitch:" <<
             angles::to_degrees(pitch) << ",yaw:" << angles::to_degrees(yaw) << std::endl;
 #endif
