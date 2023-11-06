@@ -42,6 +42,21 @@ class RealSense {
   int RegisterID();
   bool UnregisterID(int id);
   bool SetUp();
+  void setColorResolution(unsigned int Width, unsigned int Height)
+  {
+    color_width_ = Width;
+    color_height_ = Height;
+  };
+  void setDepthResolution(unsigned int Width, unsigned int Height)
+  {
+    depth_width_ = Width;
+    depth_height_ = Height;
+  };
+  void align2Color()
+  {
+    // for 435i, it has a larger field of view (FOV) size on its depth sensor than the color sensor
+    align_to_color_ = std::make_shared<rs2::align>(RS2_STREAM_COLOR);
+  }
 
   // Main methods
   bool UpdateCapture(int id, bool synchronized);
@@ -74,6 +89,14 @@ class RealSense {
   bool use_color_camera_ = false;
   bool use_depth_camera_ = false;
   bool initial_set_up_ = false;
+
+  // resolution
+  unsigned int color_width_{ 848 };
+  unsigned int color_height_{ 480 };
+  unsigned int depth_width_{ 848 };
+  unsigned int depth_height_{ 480 };
+  // aligner
+  std::shared_ptr<rs2::align> align_to_color_{ nullptr };
 };
 
 /**
@@ -86,7 +109,7 @@ class RealSense {
 class RealSenseColorCamera : public ColorCamera {
  public:
   // Constructors, destructor, and setup method
-  RealSenseColorCamera(const std::string &name,
+  RealSenseColorCamera(const std::string &name, unsigned int Width, unsigned int Height,
                        bool use_depth_as_world_frame = false);
   RealSenseColorCamera(const std::string &name,
                        const std::filesystem::path &metafile_path);
@@ -116,6 +139,10 @@ class RealSenseColorCamera : public ColorCamera {
   int realsense_id_{};
   bool use_depth_as_world_frame_ = false;
   bool initial_set_up_ = false;
+
+  // resolution
+  unsigned int width_{ 848 };
+  unsigned int height_{ 480 };
 };
 
 /**
@@ -128,9 +155,9 @@ class RealSenseColorCamera : public ColorCamera {
 class RealSenseDepthCamera : public DepthCamera {
  public:
   // Constructors, destructor, and setup method
-  RealSenseDepthCamera(const std::string &name,
+  RealSenseDepthCamera(const std::string &name, unsigned int Width, unsigned int Height, bool Align2Color,
                        bool use_color_as_world_frame = true);
-  RealSenseDepthCamera(const std::string &name,
+  RealSenseDepthCamera(const std::string &name, bool Align2Color,
                        const std::filesystem::path &metafile_path);
   RealSenseDepthCamera(const RealSenseDepthCamera &) = delete;
   RealSenseDepthCamera &operator=(const RealSenseDepthCamera &) = delete;
@@ -158,6 +185,10 @@ class RealSenseDepthCamera : public DepthCamera {
   int realsense_id_{};
   bool use_color_as_world_frame_ = true;
   bool initial_set_up_ = false;
+
+  // resolution
+  unsigned int width_{ 848 };
+  unsigned int height_{ 480 };
 };
 
 }  // namespace m3t

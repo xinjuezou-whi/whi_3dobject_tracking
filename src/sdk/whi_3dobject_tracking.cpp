@@ -149,6 +149,7 @@ namespace whi_3DObjectTracking
         bool useTextureModality = false;
         bool measureOcclusions = false;
         bool modelOcclusions = false;
+        bool align2Color = false;
         node_handle_->param("view_color", viewColor, true);
         node_handle_->param("view_depth", viewDepth, true);
         node_handle_->param("visualize_pose_result", visualizePoseResult, true);
@@ -157,15 +158,20 @@ namespace whi_3DObjectTracking
         node_handle_->param("use_texture_modality", useTextureModality, false);
         node_handle_->param("measure_occlusions", measureOcclusions, false);
         node_handle_->param("model_occlusions", modelOcclusions, false);
+        node_handle_->param("align_to_color", align2Color, false);
         std::vector<std::string> bodyNames;
         node_handle_->getParam("bodies", bodyNames);
+        std::vector<int> resolutions;
+        node_handle_->getParam("image_resolution", resolutions);
 
         // setup tracker and renderer geometry
         auto tracker{ std::make_shared<m3t::Tracker>("tracker") };
         auto rendererGeometry{ std::make_shared<m3t::RendererGeometry>("renderer geometry") };
         // create cameras
-        auto colorCamera{ std::make_shared<m3t::RealSenseColorCamera>("realsense_color") };
-        auto depthCamera{ std::make_shared<m3t::RealSenseDepthCamera>("realsense_depth") };
+        auto colorCamera{ std::make_shared<m3t::RealSenseColorCamera>("realsense_color",
+            resolutions[0], resolutions[1]) };
+        auto depthCamera{ std::make_shared<m3t::RealSenseDepthCamera>("realsense_depth",
+            resolutions[0], resolutions[1], align2Color) };
         // setup viewers
         // color viewer
         auto colorViewer{ std::make_shared<m3t::NormalColorViewer>("color_viewer",

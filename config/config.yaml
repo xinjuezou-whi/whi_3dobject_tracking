@@ -1,4 +1,6 @@
 whi_3dobject_tracking:
+  image_resolution: [848, 480] # width, height
+  align_to_color: true
   view_color: true
   view_depth: true
   visualize_pose_result: false

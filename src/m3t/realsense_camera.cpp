@@ -41,12 +41,12 @@ bool RealSense::SetUp()
     if (use_color_camera_)
     {
       // config_.enable_stream(RS2_STREAM_COLOR, 960, 540, RS2_FORMAT_BGR8, 60);
-      config_.enable_stream(RS2_STREAM_COLOR, RS2_FORMAT_BGR8, 60);
+      config_.enable_stream(RS2_STREAM_COLOR, color_width_, color_height_, RS2_FORMAT_BGR8, 60);
     }
     if (use_depth_camera_)
     {
       // config_.enable_stream(RS2_STREAM_DEPTH, 848, 480, RS2_FORMAT_Z16, 60);
-      config_.enable_stream(RS2_STREAM_DEPTH, RS2_FORMAT_Z16, 60);
+      config_.enable_stream(RS2_STREAM_DEPTH, depth_width_, depth_height_, RS2_FORMAT_Z16, 60);
     }
 
     // Start camera
@@ -98,6 +98,12 @@ bool RealSense::UpdateCapture(int id, bool synchronized) {
     for (auto &[_, v] : update_capture_ids_) v = false;
   }
   update_capture_ids_.at(id) = true;
+
+  if (align_to_color_)
+  {
+    frameset_ = align_to_color_->process(frameset_);
+  }
+
   return true;
 }
 
@@ -123,17 +129,20 @@ const Transform3fA *RealSense::depth2color_pose() const {
     return nullptr;
 }
 
-RealSenseColorCamera::RealSenseColorCamera(const std::string &name,
+RealSenseColorCamera::RealSenseColorCamera(const std::string &name, unsigned int Width, unsigned int Height,
                                            bool use_depth_as_world_frame)
     : ColorCamera{name},
       use_depth_as_world_frame_{use_depth_as_world_frame},
-      realsense_{RealSense::GetInstance()} {
+      realsense_{RealSense::GetInstance()},
+      width_(Width), height_(Height)
+{
   realsense_.UseColorCamera();
   realsense_id_ = realsense_.RegisterID();
+  realsense_.setColorResolution(width_, height_);
 }
 
-RealSenseColorCamera::RealSenseColorCamera(
-    const std::string &name, const std::filesystem::path &metafile_path)
+RealSenseColorCamera::RealSenseColorCamera(const std::string &name,
+                                           const std::filesystem::path &metafile_path)
     : ColorCamera{name, metafile_path}, realsense_{RealSense::GetInstance()} {
   realsense_.UseColorCamera();
   realsense_id_ = realsense_.RegisterID();
@@ -220,6 +229,9 @@ bool RealSenseColorCamera::LoadMetaData() {
   ReadOptionalValueFromYaml(fs, "save_images", &save_images_);
   ReadOptionalValueFromYaml(fs, "use_depth_as_world_frame",
                             &use_depth_as_world_frame_);
+  cv::FileNode intrinsics = fs["intrinsics"];
+  intrinsics["width"] >> int(width_);
+  intrinsics["height"] >> int(height_);
   fs.release();
 
   // Process parameters
@@ -242,20 +254,31 @@ void RealSenseColorCamera::GetIntrinsics() {
   intrinsics_.height = intrinsics.height;
 }
 
-RealSenseDepthCamera::RealSenseDepthCamera(const std::string &name,
-                                           bool use_color_as_world_frame)
+RealSenseDepthCamera::RealSenseDepthCamera(const std::string &name, unsigned int Width, unsigned int Height,
+                                           bool Align2Color, bool use_color_as_world_frame)
     : DepthCamera{name},
       use_color_as_world_frame_{use_color_as_world_frame},
-      realsense_{RealSense::GetInstance()} {
+      realsense_{RealSense::GetInstance()},
+      width_(Width), height_(Height)
+{
   realsense_.UseDepthCamera();
   realsense_id_ = realsense_.RegisterID();
+  realsense_.setDepthResolution(width_, height_);
+  if (Align2Color)
+  {
+    realsense_.align2Color();
+  }
 }
 
-RealSenseDepthCamera::RealSenseDepthCamera(
-    const std::string &name, const std::filesystem::path &metafile_path)
+RealSenseDepthCamera::RealSenseDepthCamera(const std::string &name,
+                                           bool Align2Color, const std::filesystem::path &metafile_path)
     : DepthCamera{name, metafile_path}, realsense_{RealSense::GetInstance()} {
   realsense_.UseDepthCamera();
   realsense_id_ = realsense_.RegisterID();
+  if (Align2Color)
+  {
+    realsense_.align2Color();
+  }
 }
 
 RealSenseDepthCamera::~RealSenseDepthCamera() {
@@ -327,6 +350,9 @@ bool RealSenseDepthCamera::LoadMetaData() {
   ReadOptionalValueFromYaml(fs, "save_images", &save_images_);
   ReadOptionalValueFromYaml(fs, "use_color_as_world_frame",
                             &use_color_as_world_frame_);
+  cv::FileNode intrinsics = fs["intrinsics"];
+  intrinsics["width"] >> int(width_);
+  intrinsics["height"] >> int(height_);
   fs.release();
 
   // Process parameters
